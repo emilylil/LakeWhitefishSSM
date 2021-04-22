@@ -1298,8 +1298,8 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
            geom_line(size=1.25)+
            theme_bw()+
            xlab("Ages")+
-           ylab("Adjusted q")+
-           pubtheme)
+           ylab("Normalized Catchability")+
+           pubtheme+theme(legend.text = element_text( size = 24)))
     dev.off()
     
     FGmatrix<-matrix(summary(sdr)[which(row.names(summary(sdr))=="FG"),1],nrow=length(ryears),ncol=length(ages))
@@ -1312,8 +1312,8 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
            geom_line(size=1.25)+
            theme_bw()+
            xlab("Ages")+
-           ylab("Adjusted q")+
-           pubtheme)
+           ylab("Normalized Catchability")+
+           pubtheme+theme(legend.text = element_text( size = 24)))
     dev.off()
     #############################################################################
     
@@ -1354,7 +1354,7 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
            scale_color_manual(values=pal(length(ages)))+
            xlab("Years")+
            ylab("Catchability")+
-           pubtheme)
+           pubtheme+theme(legend.text = element_text( size = 24)))
     dev.off()
     
     qT <- exp(summary(sdr)[which(row.names(summary(sdr))=="log_qT"),1])
@@ -1367,7 +1367,7 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
            scale_color_manual(values=pal(length(asymptoteages)))+
            xlab("Years")+
            ylab("Catchability")+
-           pubtheme)
+           pubtheme+theme(legend.text = element_text( size = 24)))
     dev.off()
     #############################################################################
     

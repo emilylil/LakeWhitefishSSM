@@ -1,12 +1,11 @@
 # Lake Michigan 03 Stock Assessment in TMB
 # Emily Morgan Liljestrand
 # Created: 4/17/19
-# Updated: 7/23/20
+# Updated: 7/21/21
 # Instructions for running
-# 1) Load Libraries, clear variables, set working directory, compile and load model
-# 2) Make sure data is specified correctly and run all the functions
-# 3) Specify model attributes (Retrospective? Compared to ADMB? Simulations? Composition Likelihood?)
-# 4) Run code section
+# 1) Load Libraries, load functions, clear variables, set working directory, compile and load model
+# 2) Specify model attributes (Retrospective? Compared to ADMB? Simulations? Composition Likelihood?)
+# 3) Run code section(s), descriptions specified below
 
 #############################################################################
 # SET UP THE DYNAMICS OF THE CODE (WD, ETC) AND RUN FUNCTIONS
@@ -14,9 +13,13 @@
 
 # Set up workspace, load libraries, compile and link model
 ############################################################################
-library(ggplot2)
-library(RColorBrewer)
 library(TMB)
+library(ggplot2)
+library(tidyverse)
+library(cowplot)
+library(gridExtra)
+library(ggpubr)
+library(RColorBrewer)
 library(boot)
 library(colorspace)
 library(PerformanceAnalytics)
@@ -35,31 +38,30 @@ source("WFM03_2018_TMB_SSM_Functions.R")
 #############################################################################
 # How to fit the age-composition data (1- multinomial, 2-log gaussian cox process)?
 agecompfit <- 1
+# Do you want the end results to be compared against the non-SSM ADMB model, Yes (T) or No (F)?
+checkagainstADMB <- T
+
 #If you're doing a multinomial, do you want to do the iterative process to estimate ESS?
 estimateESS <- F
 #Maximum number of times you're willing to iterate/reweight ESS before bailing out
 maxreps <- 30
 #If you are doing a multinomial, how do you wanna weight the ESS
 ESS_w=c()
-ESS_w[1] <- 0.11
-ESS_w[2] <- 0.057
-
+ESS_w[1] <- 0.1165
+ESS_w[2] <- 0.0585
 # ESS_w[1] <- 1
 # ESS_w[2] <- 1
+
+# Do you want to run simulations to check the model? 
+dosimulation <- F
+# If you do want to run simulations, how many total?
+numsims <- 50
 
 # Do you want to run retrospective analysis, Yes (T) or No (F)?
 isretro <- F
 # If you do want to run a retrospective analysis, which years do you want to start and end on?
 retrostart <- 2017
 retroend <- 2007
-
-# Do you want to run simulations to check the model? 
-dosimulation <- F
-# If you do want to run simulations, how many total?
-numsims <- 5
-
-# Do you want the end results to be compared against the non-SSM ADMB model, Yes (T) or No (F)?
-checkagainstADMB <- F
 ############################################################################
 
 
@@ -71,6 +73,9 @@ if(agecompfit==1){
   modelname = "WFM03_2018_TMB_SSM_MN.cpp"
 }
 if(agecompfit==2){
+  modelname = "WFM03_2018_TMB_SSM_MVLN.cpp"
+}
+if(agecompfit==3){
   modelname = "WFM03_2018_TMB_SSM_cLGCP.cpp"
 }
 
@@ -83,10 +88,15 @@ dyn.load(dynlib(modelname))
 #############################################################################
 # CODE SECTION:
 #############################################################################
+# TABLE OF CONTENTS
+# (1) Fitting the model using prespecified functions
+# (2) Iterative reweighting to find the ESS using prespecified functions
+# (3) Simulating catch and composition data
+# (4) Running a retrospective analysis (Note: must run #1 at least once before #4)
 
-# INITIAL RUN WHEN EFFECTIVE SAMPLE SIZE EQUALS REAL SAMPLE SIZE:
 ############################################################################
-
+# (1)
+#Clear any previous data, parameters, bounds, obj, fit, or sdr files
 rm(data,parameters,bounds,obj,fit,sdr)
 
 #Specify the data and put it in a single list
@@ -94,7 +104,7 @@ data<-setdata(ESS_W_T=ESS_w[1],ESS_W_G=ESS_w[2])
 #Specify the parameters and put it in a single list
 parameters<-setparam(data,agecompfit) 
 #Specify the upper and lower bounds and put it in a single list
-bounds<-setbounds()
+bounds<-setbounds(agecompfit)
 
 #Make the model object using the specified data and parameters
 obj <- setmodel(data,parameters,agecompfit,modelname)
@@ -103,16 +113,20 @@ fit <- fitmodel(obj,bounds)
 #Report the model into a sdreport file using the model object
 sdr <- reportmodel(obj)
 
-summary(sdr)[which(row.names(summary(sdr))=="M"),]
-summary(sdr)[which(row.names(summary(sdr))=="sdSR"),]
-summary(sdr)[which(row.names(summary(sdr))=="sd_logeffortT"),]
-summary(sdr)[which(row.names(summary(sdr))=="sd_logeffortG"),]
-summary(sdr)[which(row.names(summary(sdr))=="rhoalphaT"),]
-summary(sdr)[which(row.names(summary(sdr))=="rhoalphaG"),]
+#Make a new directory to save this version of the model run
+newwd <- setnewwd(originalwd,isretro,data=data)
+#Save results (txt files)
+saveresults(originalwd,newwd,sdr)
+#Save plots depending on if intended for presentation or publication 
+# savegraphspresentation(checkagainstADMB,originalwd,newwd,sdr,data)
+savegraphspublication(checkagainstADMB,originalwd,newwd,sdr,data)
+#Save residual plots
+saveresiduals(originalwd,newwd,sdr,data)
+#Just in case one of the functions didn't do it, return the working directory to where the code is
+setwd(originalwd)
 
-summary(sdr)[which(row.names(summary(sdr))=="AvgZ"),]
-
-
+############################################################################
+# (2)
 #If you want to iteratively reweight the effective sample size of composition data, do this to calculate a new sdr
 if(estimateESS==T)
 {
@@ -155,7 +169,7 @@ if(estimateESS==T)
       model_var<-calcvar(sdr.ess,data.ess) #Calculate the variance in age composition
       ESS_w<-calcw(sdr.ess,data.ess) 
       nreps=nreps+1
-        
+      
       if(ESS_w[1]>1){
         ESS_w[1]<-(1/nreps)
       }
@@ -183,26 +197,15 @@ if(estimateESS==T)
   else{print("Iterative reweighting failed to find weights where observed and expected variance match")}
 }
 
-#Make a new directory to save this version of the model run
-newwd <- setnewwd(originalwd,isretro,data=data)
-#Save results (txt files)
-saveresults(originalwd,newwd,sdr)
-
-#Save plots depending on if intended for presentation or publication 
-savegraphspresentation(checkagainstADMB,originalwd,newwd,sdr,data)
-savegraphspublication(checkagainstADMB,originalwd,newwd,sdr,data)
-
-saveresiduals(originalwd,newwd,sdr,data)
-#Just in case one of the functions didn't do it, return the working directory to where the code is
-setwd(originalwd)
-
+############################################################################
+# (3)
 if(dosimulation==T)
 {
   simresults <- simmodel(data,obj,parameters,agecompfit,modelname,originalwd,newwd,estimateESS,maxreps,numsims,ESS_W_T_SIM=ESS_w)
 }
 
-#Here's a version of everything from above but iterated such that I can retrospective
 ############################################################################
+# (4)
 rm(data,parameters,bounds,obj,fit,sdr)
 if(isretro==T)
 {
@@ -222,7 +225,7 @@ if(isretro==T)
     fit <- fitmodel(obj,bounds)
     #Report the model into a sdreport file using the model object
     sdr <- reportmodel(obj)
-
+    
     if(retroyr==retrostart){retrowd <- setretrowd(originalwd)}
     newwd <- setnewwd(originalwd,isretro,retroyr=retroyr,retroend,retrostart,data,retrowd)
     
@@ -234,4 +237,3 @@ if(isretro==T)
   }
   saveretroplots(originalwd,retrowd,retrostart,retroend,data)
 }
-############################################################################

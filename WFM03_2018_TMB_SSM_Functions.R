@@ -285,7 +285,7 @@ setdata <- function(retroyear=2017,ESS_W_T=1,ESS_W_G=1)
 
 #PARAMETER SECTION Recruitment (N1,j and Ni,1), and catchability (qi,j) are RE
 #############################################################################
-setparam <- function(data,agecompfit,log_sig = -1.15490195999,log_sdSR = -1.279150914,log_sd_logeffortT = -0.99251027,log_sd_logeffortG = -1.128061467,logit_rhoalphaT = 1.755746654,logit_rhoalphaG = 1.920252761)
+setparam <- function(data,agecompfit,log_sig = -2.70663320551,log_sdSR = -1.279150914,log_sd_logeffortT = -0.99251027,log_sd_logeffortG = -1.128061467,logit_rhoalphaT = 1.755746654,logit_rhoalphaG = 1.920252761,log_sd_logcatchT = -0.99251027,log_sd_logcatchG = -1.128061467,logit_rhoalphacatchT = 1.755746654,logit_rhoalphacatchG = 1.920252761)
 {
   # As much as possible (where it matches with the ADMB file) the starting values
   # match the estimated values in the ADMB version from PAR file
@@ -334,13 +334,41 @@ setparam <- function(data,agecompfit,log_sig = -1.15490195999,log_sdSR = -1.2791
                               log_rec=log_rec))
   }
   
+  log_sd_logcatchT <- log_sd_logcatchT
+  log_sd_logcatchG <- log_sd_logcatchG
+  logit_rhoalphacatchT <-  logit_rhoalphacatchT
+  logit_rhoalphacatchG <- logit_rhoalphacatchG
+  
+  if(agecompfit==2){
+    # return(parameters <- list(log_sig=log_sig,log_sdSR=log_sdSR,
+    #                    log_sd_logeffortT=log_sd_logeffortT,
+    #                    log_sd_logeffortG=log_sd_logeffortG,
+    #                    logit_rhoalphaT=logit_rhoalphaT,
+    #                    logit_rhoalphaG=logit_rhoalphaG,
+    #                    lnM=lnM,log_qT=log_qT,
+    #                    log_qG=log_qG,
+    #                    log_rec=log_rec,lnZavg=lnZavg))
+    return(parameters <- list(log_sdSR=log_sdSR,
+                              log_sd_logeffortT=log_sd_logeffortT,
+                              log_sd_logeffortG=log_sd_logeffortG,
+                              logit_rhoalphaT=logit_rhoalphaT,
+                              logit_rhoalphaG=logit_rhoalphaG,
+                              log_sd_logcatchT=log_sd_logcatchT,
+                              log_sd_logcatchG=log_sd_logcatchG,
+                              logit_rhoalphacatchT=logit_rhoalphacatchT,
+                              logit_rhoalphacatchG=logit_rhoalphacatchG,
+                              lnM=lnM,log_qT=log_qT,
+                              log_qG=log_qG,
+                              log_rec=log_rec))
+  }
+  
   #This section for if you need the extra parameters for the cLGCP version
   log_std_log_gamT=rep(-2,length(data$ages))
   log_std_log_gamG=rep(-2,length(data$ages))
   log_gamT=matrix(0,nrow=length(data$ryears),ncol=length(data$ages))
   log_gamG=matrix(0,nrow=length(data$ryears),ncol=length(data$ages))
   
-  if(agecompfit==2){
+  if(agecompfit==3){
     return(parameters <- list(log_sig=log_sig,log_sdSR=log_sdSR,
                               log_sd_logeffortT=log_sd_logeffortT,
                               log_sd_logeffortG=log_sd_logeffortG,
@@ -361,8 +389,9 @@ setparam <- function(data,agecompfit,log_sig = -1.15490195999,log_sdSR = -1.2791
 
 #BOUNDS SECTION 
 #############################################################################
-setbounds <- function()
+setbounds <- function(agecompfit)
 {
+
   #Upper Bounds
   log_sig_upper <- 5
   log_sdSR_upper <- 5
@@ -370,6 +399,11 @@ setbounds <- function()
   log_sd_logeffortG_upper <- 5
   logit_rhoalphaT_upper <- 100
   logit_rhoalphaG_upper <- 100
+  
+  log_sd_logcatchT_upper <- 5
+  log_sd_logcatchG_upper <- 5
+  logit_rhoalphacatchT_upper <- 100
+  logit_rhoalphacatchG_upper <- 100
   
   lnM_upper <- 5
   lnZavg_upper <- 5
@@ -386,21 +420,41 @@ setbounds <- function()
   #                   logit_rhoalphaT_upper=logit_rhoalphaT_upper,
   #                   logit_rhoalphaG_upper=logit_rhoalphaG_upper,
   #                   lnM_upper=lnM_upper,lnZavg_upper=lnZavg_upper)
-  
-  upper_bounds <- c(log_sig_upper=log_sig_upper,log_sdSR_upper=log_sdSR_upper,
+  if(agecompfit==1)
+  {
+    upper_bounds <- c(log_sig_upper=log_sig_upper,log_sdSR_upper=log_sdSR_upper,
                     log_sd_logeffortT_upper=log_sd_logeffortT_upper,
                     log_sd_logeffortG_upper=log_sd_logeffortG_upper,
                     logit_rhoalphaT_upper=logit_rhoalphaT_upper,
                     logit_rhoalphaG_upper=logit_rhoalphaG_upper,
                     lnM_upper=lnM_upper)
+  }
+  if(agecompfit==2)
+  {
+    upper_bounds <- c(log_sdSR_upper=log_sdSR_upper,
+                      log_sd_logeffortT_upper=log_sd_logeffortT_upper,
+                      log_sd_logeffortG_upper=log_sd_logeffortG_upper,
+                      logit_rhoalphaT_upper=logit_rhoalphaT_upper,
+                      logit_rhoalphaG_upper=logit_rhoalphaG_upper,
+                      log_sd_logcatchT_upper=log_sd_logcatchT_upper,
+                      log_sd_logcatchG_upper=log_sd_logcatchG_upper,
+                      logit_rhoalphacatchT_upper=logit_rhoalphacatchT_upper,
+                      logit_rhoalphacatchG_upper=logit_rhoalphacatchG_upper,
+                      lnM_upper=lnM_upper)
+  }
   
   #Lower Bounds
-  log_sig_lower <- -5
+  log_sig_lower <- -10
   log_sdSR_lower <- -75
   log_sd_logeffortT_lower <- -20
   log_sd_logeffortG_lower <- -20
   logit_rhoalphaT_lower <- -100
   logit_rhoalphaG_lower <- -100
+  
+  log_sd_logcatchT_lower <- -20
+  log_sd_logcatchG_lower <- -20
+  logit_rhoalphacatchT_lower <- -100
+  logit_rhoalphacatchG_lower <- -100
   
   lnM_lower <- -5
   lnZavg_lower <- -5
@@ -418,14 +472,31 @@ setbounds <- function()
   #                   logit_rhoalphaG_lower=logit_rhoalphaG_lower,
   #                   lnM_lower=lnM_lower,lnZavg_lower=lnZavg_lower)
   
-  lower_bounds <- c(log_sig_lower=log_sig_lower,log_sdSR_lower=log_sdSR_lower,
+  if(agecompfit==1)
+  {
+    lower_bounds <- c(log_sig_lower=log_sig_lower,log_sdSR_lower=log_sdSR_lower,
                     log_sd_logeffortT_lower=log_sd_logeffortT_lower,
                     log_sd_logeffortG_lower=log_sd_logeffortG_lower,
                     logit_rhoalphaT_lower=logit_rhoalphaT_lower,
                     logit_rhoalphaG_lower=logit_rhoalphaG_lower,
                     lnM_lower=lnM_lower)
+  }
+  if(agecompfit==2)
+  {
+    lower_bounds <- c(log_sdSR_lower=log_sdSR_lower,
+                      log_sd_logeffortT_lower=log_sd_logeffortT_lower,
+                      log_sd_logeffortG_lower=log_sd_logeffortG_lower,
+                      logit_rhoalphaT_lower=logit_rhoalphaT_lower,
+                      logit_rhoalphaG_lower=logit_rhoalphaG_lower,
+                      log_sd_logcatchT_lower=log_sd_logcatchT_lower,
+                      log_sd_logcatchG_lower=log_sd_logcatchG_lower,
+                      logit_rhoalphacatchT_lower=logit_rhoalphacatchT_lower,
+                      logit_rhoalphacatchG_lower=logit_rhoalphacatchG_lower,
+                      lnM_lower=lnM_lower)
+  }
   
   #Return list of upper and lower bounds
+  
   return(list(upper_bounds = upper_bounds,
               lower_bounds = lower_bounds))
 }
@@ -440,10 +511,14 @@ setmodel <- function(data,parameters,agecompfit,modelname,mymapinput = list(log_
   
   # reffects <- c("log_rec")
   if(agecompfit==1){reffects <- c("log_rec","log_qG","log_qT")}
-  if(agecompfit==2){reffects <- c("log_rec","log_qG","log_qT","log_gamT","log_gamG")}
+  if(agecompfit==2){reffects <- c("log_rec","log_qG","log_qT")}
+  if(agecompfit==3){reffects <- c("log_rec","log_qG","log_qT","log_gamT","log_gamG")}
   
   # MAPPING:
-  mymap <- mymapinput
+  if(agecompfit==1){mymap <- mymapinput
+                    #mymap<-c()
+                    }
+  if(agecompfit==2){mymap <- c()}
   # mymap = list(log_sig=as.factor(NA))
   # Add mapping such that log_std_log_gamT and G are not age-varying
   # Could add even more nuance if you think there's groupings for certain ages (1-3, 4-6, etc.)
@@ -478,8 +553,14 @@ setmodel <- function(data,parameters,agecompfit,modelname,mymapinput = list(log_
 #############################################################################
 fitmodel <- function(obj,bounds)
 {
+  
   # Fit the model with defaults:
-  fit <- nlminb(obj$par, obj$fn, obj$gr,lower=bounds$lower_bounds,upper=bounds$upper_bounds)
+  fit<-tryCatch({fit <- nlminb(obj$par, obj$fn, obj$gr,lower=bounds$lower_bounds,upper=bounds$upper_bounds)},
+          warning=function(w){NA},
+          error=function(e){NA},
+          finally=function(f){NA}
+          )
+  # print(fit)
   # Fit the model with increases in the caps on iterations and convergence criteria:
   # fit <- nlminb(obj$par, obj$fn, obj$gr,lower=bounds$lower_bounds,upper=bounds$upper_bounds,
   #               control=list(eval.max=20000000,iter.max=10000000))
@@ -503,13 +584,24 @@ fitmodel <- function(obj,bounds)
 reportmodel <- function(obj)
 {
   # Make the SD Report object and examine it
-  sdr <- sdreport(obj)
-  # Secondary convergence message:
-  print("Did the model converge: ")
-  print(sdr$pdHess)
-  # # Look at sdr:
-  # summary(sdr)
-  # head(summary(sdr))
+  sdr<-tryCatch({sdr <- sdreport(obj)},
+                warning=function(w){NA},
+                error=function(e){NA},
+                finally=function(f){NA}
+  )
+  if(is.na(sdr))
+  {
+    print("Something messed up making the sdreport")
+  }
+  else
+  {
+    # Secondary convergence message:
+    print("Did the model converge: ")
+    print(sdr$pdHess)
+    # # Look at sdr:
+    # summary(sdr)
+    # head(summary(sdr))
+  }
   return(sdr)
 }
 #############################################################################
@@ -801,6 +893,163 @@ savegraphspresentation<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     dev.off()
     #############################################################################
     
+    #SELECTIVITY CURVES
+    #############################################################################
+    #SSM
+    FTmatrix<-matrix(summary(sdr)[which(row.names(summary(sdr))=="FT"),1],nrow=length(ryears),ncol=length(ages))
+    FTmatrix.max <- apply(FTmatrix,1,max)
+    AdjustedqTmatrix <- FTmatrix/FTmatrix.max
+    AdjustedqT.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(AdjustedqTmatrix))
+    
+    jpeg('SelectivityTrapNetSSM.jpg',width=1200,height=600)
+    plot(ggplot(data=AdjustedqT.df,aes(x=age,y=catchability,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           xlab("Ages")+
+           ylab("Normalized Catchability")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    FGmatrix<-matrix(summary(sdr)[which(row.names(summary(sdr))=="FG"),1],nrow=length(ryears),ncol=length(ages))
+    FGmatrix.max <- apply(FGmatrix,1,max)
+    AdjustedqGmatrix <- FGmatrix/FGmatrix.max
+    AdjustedqG.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(AdjustedqGmatrix))
+    
+    jpeg('SelectivityGillNetSSM.jpg',width=1200,height=600)
+    plot(ggplot(data=AdjustedqG.df,aes(x=age,y=catchability,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           xlab("Ages")+
+           ylab("Normalized Catchability")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    #SCA
+    SelT.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="SelT"),2]
+    SelTmatrix.admb<-matrix(SelT.admb,nrow=length(ryears),ncol=length(ages))
+    SelTmatrix.matrix.max <- apply(SelTmatrix.admb,1,max)
+    AdjustedSelTmatrix.admb <- SelTmatrix.admb/SelTmatrix.matrix.max
+    AdjustedSelT.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),selectivity=c(AdjustedSelTmatrix.admb))
+    jpeg('SelectivityTrapNetSCAAdjusted.jpg',width=1200,height=600)
+    plot(ggplot(data=AdjustedSelT.admb.df,aes(x=age,y=selectivity,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           xlab("Ages")+
+           ylab("Selectivity")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    SelT.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="SelT"),2]
+    SelTmatrix.admb<-matrix(SelT.admb,nrow=length(ryears),ncol=length(ages))
+    SelTmatrix.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),selectivity=c(SelTmatrix.admb))
+    jpeg('SelectivityTrapNetSCA.jpg',width=1200,height=600)
+    plot(ggplot(data=SelTmatrix.admb.df,aes(x=age,y=selectivity,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           xlab("Ages")+
+           ylab("Selectivity")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    SelG.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="SelG"),2]
+    SelGmatrix.admb<-matrix(SelG.admb,nrow=length(ryears),ncol=length(ages))
+    SelGmatrix.matrix.max <- apply(SelGmatrix.admb,1,max)
+    AdjustedSelGmatrix.admb <- SelGmatrix.admb/SelGmatrix.matrix.max
+    AdjustedSelG.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),selectivity=c(AdjustedSelGmatrix.admb))
+    jpeg('SelectivityGillNetSCAAdjusted.jpg',width=1200,height=600)
+    plot(ggplot(data=AdjustedSelG.admb.df,aes(x=age,y=selectivity,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           xlab("Ages")+
+           ylab("Selectivity")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    SelG.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="SelG"),2]
+    SelGmatrix.admb<-matrix(SelG.admb,nrow=length(ryears),ncol=length(ages))
+    SelGmatrix.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),selectivity=c(SelGmatrix.admb))
+    jpeg('SelectivityGillNetSCA.jpg',width=1200,height=600)
+    plot(ggplot(data=SelGmatrix.admb.df,aes(x=age,y=selectivity,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           xlab("Ages")+
+           ylab("Selectivity")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    #############################################################################
+    
+    #CATCHABILITY
+    #############################################################################
+    #Specify color palette for catchability plots
+    coul<-brewer.pal(10,"Spectral")
+    
+    #SSM
+    qG <- exp(summary(sdr)[which(row.names(summary(sdr))=="log_qG"),1])
+    qGmatrix<-matrix(qG,nrow=length(ryears),ncol=length(ages))
+    qG.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(qGmatrix))
+    jpeg('CatchabilityGillNetSSM.jpg',width=1200,height=600)
+    plot(ggplot(data=qG.df,aes(x=year,y=catchability,color=as.factor(age)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           scale_color_manual(values=colorRampPalette(coul)(length(ages)))+
+           xlab("Years")+
+           ylab("Catchability")+
+           # ggtitle("Catchability of Gill Net by Age and Year of Lake Whitefish in WFM03")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    qT <- exp(summary(sdr)[which(row.names(summary(sdr))=="log_qT"),1])
+    qTmatrix<-matrix(qT,nrow=length(ryears),ncol=length(asymptoteages))
+    qT.df <- data.frame(year=rep(ryears,length(asymptoteages)),age=rep(asymptoteages,each=length(ryears)),catchability=c(qTmatrix))
+    jpeg('CatchabilityTrapNetSSM.jpg',width=1200,height=600)
+    plot(ggplot(data=qT.df,aes(x=year,y=catchability,color=as.factor(age)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           scale_color_manual(values=colorRampPalette(coul)(length(asymptoteages)))+
+           xlab("Years")+
+           ylab("Catchability")+
+           # ggtitle("Catchability of Trap Net by Age and Year of Lake Whitefish in WFM03")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    #SCA
+    qG.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="qG"),2]
+    qGmatrix.admb <- SelGmatrix.admb*0
+    for(i in 1:nrow(SelGmatrix.admb))
+    {
+      qGmatrix.admb[i,]<-SelGmatrix.admb[i,]*qG.admb[i]
+    }
+    qG.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(qGmatrix.admb))
+    jpeg('CatchabilityGillNetSCA.jpg',width=1200,height=600)
+    plot(ggplot(data=qG.admb.df,aes(x=year,y=catchability,color=as.factor(age)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           scale_color_manual(values=colorRampPalette(coul)(length(ages)))+
+           xlab("Years")+
+           ylab("Catchability")+
+           # ggtitle("Catchability of Gill Net by Age and Year of Lake Whitefish in WFM03")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    qT.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="qT"),2]
+    qTmatrix.admb <- SelTmatrix.admb*0
+    for(i in 1:nrow(SelTmatrix.admb))
+    {
+      qTmatrix.admb[i,]<-SelTmatrix.admb[i,]*qT.admb[i]
+    }
+    qT.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(qTmatrix.admb))
+    jpeg('CatchabilityTrapNetSCA.jpg',width=1200,height=600)
+    plot(ggplot(data=qT.admb.df,aes(x=year,y=catchability,color=as.factor(age)))+
+           geom_line(size=1.25)+
+           theme_bw()+
+           scale_color_manual(values=colorRampPalette(coul)(length(ages)))+
+           xlab("Years")+
+           ylab("Catchability")+
+           # ggtitle("Catchability of Gill Net by Age and Year of Lake Whitefish in WFM03")+
+           prestheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    #############################################################################
+    
     #MORTALITY
     #############################################################################
     FG<-matrix(summary(sdr)[which(row.names(summary(sdr))=="FG"),1],nrow=length(ryears),ncol=length(ages))
@@ -982,30 +1231,8 @@ savegraphspresentation<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     
     #CATCHABILITY
     #############################################################################
-    #Function from colorspace I needed to specify color scale:
-    pal<-function (n, h = c(300, 123), c = 74, l = c(33, 85), power = 0.955555555555556, 
-                   fixup = TRUE, gamma = NULL, alpha = 1, ...) 
-    {
-      if (!is.null(gamma)) 
-        warning("'gamma' is deprecated and has no effect")
-      if (n < 1L) 
-        return(character(0L))
-      h <- rep(h, length.out = 2L)
-      c <- c[1L]
-      l <- rep(l, length.out = 2L)
-      power <- rep(power, length.out = 2L)
-      rval <- seq(1, -1, length = n)
-      rval <- hex(polarLUV(L = l[2L] - diff(l) * abs(rval)^power[2L], 
-                           C = c * abs(rval)^power[1L], H = ifelse(rval > 0, h[1L], 
-                                                                   h[2L])), fixup = fixup, ...)
-      if (!missing(alpha)) {
-        alpha <- pmax(pmin(alpha, 1), 0)
-        alpha <- format(as.hexmode(round(alpha * 255 + 0.0001)), 
-                        width = 2L, upper.case = TRUE)
-        rval <- paste(rval, alpha, sep = "")
-      }
-      return(rval)
-    }
+    #Specify color palette for catchability plots
+    coul<-brewer.pal(10,"Spectral")
     
     qG <- exp(summary(sdr)[which(row.names(summary(sdr))=="log_qG"),1])
     qGmatrix<-matrix(qG,nrow=length(ryears),ncol=length(ages))
@@ -1014,7 +1241,7 @@ savegraphspresentation<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     plot(ggplot(data=qG.df,aes(x=year,y=catchability,color=as.factor(age)))+
            geom_line(size=1.25)+
            theme_bw()+
-           scale_color_manual(values=pal(length(ages)))+
+           scale_color_manual(values=colorRampPalette(coul)(length(ages)))+
            xlab("Years")+
            ylab("Catchability")+
            # ggtitle("Catchability of Gill Net by Age and Year of Lake Whitefish in WFM03")+
@@ -1028,7 +1255,7 @@ savegraphspresentation<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     plot(ggplot(data=qT.df,aes(x=year,y=catchability,color=as.factor(age)))+
            geom_line(size=1.25)+
            theme_bw()+
-           scale_color_manual(values=pal(length(asymptoteages)))+
+           scale_color_manual(values=colorRampPalette(coul)(length(asymptoteages)))+
            xlab("Years")+
            ylab("Catchability")+
            # ggtitle("Catchability of Trap Net by Age and Year of Lake Whitefish in WFM03")+
@@ -1097,11 +1324,42 @@ savegraphspresentation<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
 #############################################################################
 savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
 {
-  pubtheme <- theme(axis.title=element_text(size=32),axis.text=element_text(size=32),
+  pubtheme <- theme_classic()+theme(axis.title=element_text(size=32),axis.text=element_text(size=32),
+                    text = element_text(family="serif"),
+                    legend.text=element_text(size=32),
+                    legend.title=element_text(size=32),
                     panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                     panel.background = element_blank(), axis.line = element_line(colour = "black"),
                     axis.text.x = element_text(color="black",size=24),
                     axis.text.y = element_text(color="black",size=24,angle=90,hjust=0.5))
+
+  # Something I found in Glassic et al. 2019
+  # pubtheme <- theme_classic()+theme (axis.title.y = element_text(size = 14, margin = margin(t = 0, r = 10, b = 0, l = 0), colour = "black"),
+  #                    axis.title.x = element_text(size = 14, margin = margin(t = 10, r = 0, b = 0, l = 0), colour = "black"),
+  #                    #set the font type
+  #                    text = element_text(family="Times New Roman"),
+  #                    #modify plot title, the B in this case
+  #                    plot.title = element_text(face="bold",family = "Arial"),
+  #                    #position the legend on the figure
+  #                    legend.position = c(1,0.5),
+  #                    #adjust size of text for legend
+  #                    legend.text = element_text(size = 10),
+  #                    #margin for the plot
+  #                    plot.margin = unit(c(0, 0, 0, 0), "cm"),
+  #                    #set size of the tick marks for y-axis
+  #                    axis.ticks.y = element_line(size = 0.5),
+  #                    #set size of the tick marks for x-axis
+  #                    axis.ticks.x = element_line(size = 0.5),
+  #                    #adjust length of the tick marks
+  #                    axis.ticks.length = unit(0.2,"cm"),
+  #                    #set size and location of the tick labels for the y axis
+  #                    axis.text.y = element_text(colour = "black", size = 14, angle = 0, vjust = 0.5, hjust = 1,
+  #                                               margin = margin(t = 0, r = 5, b = 0, l = 0)),
+  #                    #set size and location of the tick labels for the x axis
+  #                    axis.text.x = element_text(colour = "black", size = 14, angle = 0, vjust = 0, hjust = 0.5,
+  #                                         margin = margin(t = 5, r = 0, b = 0, l = 0)),
+  #                    #set the axis size, color, and end shape
+  #                     axis.line = element_line(colour = "black", size = 0.5, lineend = "square"))
   
   #Set some important values that determine dynamics of the plots
   years<-data$years
@@ -1115,53 +1373,251 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
   ADMBdat.table<-read.table("ADMBResults.csv",sep=",",head=F)
   setwd(newwd)
   
+  Trap <- data$in_effortT
+  Gill <- data$in_effortG
+  Effort.df <- data.frame(Year=rep(ryears,length(ages)),Fishery=rep(c("Trap","Gill"),each=length(ryears)),Effort=c(Trap,Gill))
+  
+  jpeg('Effort.jpg',width=1200,height=800)
+  plot(ggplot(data=Effort.df,aes(x=Year,y=Effort,color=as.factor(Fishery)))+
+         geom_line(size=3)+
+         geom_point(size=3)+
+         xlab("Years")+
+         ylab("Effort (Millions of Feet or 100's of Lifts)")+
+         pubtheme+theme(legend.text = element_text( size = 24))+
+         scale_color_manual(values=c('black','azure4'))+
+         labs(color="Fishery"))
+  dev.off()
+  
   if(checkagainstADMB==T)
   {
-    #POPULATION SIZE
+    #POPULATION SIZE AND RECRUITMENT
     #############################################################################
     Nmatrix<-matrix(summary(sdr)[which(row.names(summary(sdr))=="N"),1],nrow=length(ryears),ncol=length(ages))
     Abundance<- apply(Nmatrix,1,sum)/1000
     Abundance.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="Popsize"),2]/1000
+    Abundance.df <- data.frame(Year=rep(ryears,2),Model=rep(c("SCA","SSM"),each=length(ryears)),Abundance=c(Abundance.admb,Abundance))
+    Recruitment <- Nmatrix[,1]/1000
+    Recruitment.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="Recruitment"),2]/1000
+    Recruitment.df <- data.frame(Year=rep(ryears,2),Model=rep(c("SCA","SSM"),each=length(ryears)),Recruitment=c(Recruitment.admb,Recruitment))
     
-    jpeg('Abundance.jpg',width=1200,height=600)
-    plot(ggplot()+geom_line(data=data.frame(years,Abundance.admb),aes(x=years,y=Abundance.admb),color="black",size=2)+
-           geom_line(data=data.frame(ryears,Abundance),aes(x=ryears,y=Abundance),color="blue",linetype = "dashed",size=2)+
-           theme_bw()+
+    Abundance<-ggplot(data=Abundance.df,aes(x=Year,y=Abundance,color=as.factor(Model)))+
+           geom_line(aes(linetype=Model, color=Model),size=3)+
+           geom_point(aes(color=Model))+
            xlab("Years")+
            ylab("Number of fish (x1000)")+ylim(0,5000)+
-           pubtheme)
-    dev.off()
+           theme(legend.text = element_text( size = 24))+
+           labs(color="Model")+
+           annotate(geom="text",x=ryears[1], y=5000, label="A",size=24,fontface="bold")+
+           pubtheme+scale_color_manual(values=c('black','azure4'))
+  
+    Recruitment<-ggplot(data=Recruitment.df,aes(x=Year,y=Recruitment,color=as.factor(Model)))+
+           geom_line(aes(linetype=Model, color=Model),size=3)+
+           geom_point(aes(color=Model))+
+           xlab("Years")+
+           ylab("Number of fish (x1000)")+ylim(0,1800)+
+           theme(legend.text = element_text( size = 24))+
+           labs(color="Model")+
+           annotate(geom="text",x=ryears[1], y=1800, label="B",size=24,fontface="bold")+
+           pubtheme+scale_color_manual(values=c('black','azure4'))
+    
+    jpeg('AbundanceRecruitment.jpg',width=1200,height=1800)
+    grid.arrange(Abundance,Recruitment,ncol=1)
+    dev.off() 
     #############################################################################
     
     #SPAWNING STOCK BIOMASS
     #############################################################################
     SP_BIO <-summary(sdr)[which(row.names(summary(sdr))=="SP_BIO"),1]/1000*2.20462
     SP_BIO.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="SPBiomass"),2]/1000
+    Biomass.df <- data.frame(Year=rep(ryears,2),Model=rep(c("SCA","SSM"),each=length(ryears)),Biomass=c(SP_BIO.admb,SP_BIO))
     
-    jpeg('SSBiomass.jpg',width=1200,height=600)
-    plot(ggplot()+
-           geom_line(data=data.frame(years,SP_BIO.admb),aes(x=years,y=SP_BIO.admb),color="black",size=2)+
-           geom_line(data=data.frame(ryears,SP_BIO),aes(x=ryears,y=SP_BIO),color="blue",linetype = "dashed",size=2)+
-           theme_bw()+
+    jpeg('SSBiomass.jpg',width=1200,height=800)
+    plot(ggplot(data=Biomass.df,aes(x=Year,y=Biomass,color=as.factor(Model)))+
+           geom_line(aes(linetype=Model, color=Model),size=3)+
+           geom_point(aes(color=Model))+
            xlab("Years")+
            ylab("Spawning Stock Biomass (x1000) lbs")+ylim(0,7000)+
-           pubtheme) 
+           theme(legend.text = element_text( size = 24))+
+           labs(color="Model")+
+           pubtheme+scale_color_manual(values=c('black','azure4')))
     dev.off()
     #############################################################################
     
-    #RECRUITMENT
+    #SELECTIVITY CURVES
     #############################################################################
-    Nmatrix<-matrix(summary(sdr)[which(row.names(summary(sdr))=="N"),1],nrow=length(ryears),ncol=length(ages))
-    Recruitment <- Nmatrix[,1]/1000
-    Recruitment.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="Recruitment"),2]/1000
+    #SSM
     
-    jpeg('Recruitment.jpg',width=1200,height=600)
-    plot(ggplot()+geom_line(data=data.frame(years,Recruitment.admb),aes(x=years,y=Recruitment.admb),color="black",size=2)+
-           geom_line(data=data.frame(ryears,Recruitment),aes(x=ryears,y=Recruitment),color="blue",linetype = "dashed",size=2)+
-           theme_bw()+
+    FTmatrix<-matrix(summary(sdr)[which(row.names(summary(sdr))=="FT"),1],nrow=length(ryears),ncol=length(ages))
+    FTmatrix.max <- apply(FTmatrix,1,max)
+    AdjustedqTmatrix <- FTmatrix/FTmatrix.max
+    AdjustedqT.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(AdjustedqTmatrix))
+    
+    coul<-brewer.pal(11,"RdBu")
+    
+    SelectivityTrapNetSSM<-ggplot(data=AdjustedqT.df,aes(x=age,y=catchability,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           xlab("Ages")+
+           ylab("Normalized Catchability (100's of lifts * year)")+
+           scale_color_manual(values=colorRampPalette(coul)(length(years)))+
+           labs(color="Year")+
+           pubtheme
+
+    # SelectivityTrapNetSSM_AFS<-ggplot(data=AdjustedqT.df,aes(x=age,y=catchability,color=as.factor(year)))+
+    #                                   geom_line(size=1.25)+
+    #                                   xlab("Ages")+
+    #                                   ylab("Normalized Catchability (100's of lifts * year)")+
+    #                                   scale_color_manual(values=colorRampPalette(coul)(length(years)))+
+    #                                   pubtheme+theme(legend.position = "none")
+
+    FGmatrix<-matrix(summary(sdr)[which(row.names(summary(sdr))=="FG"),1],nrow=length(ryears),ncol=length(ages))
+    FGmatrix.max <- apply(FGmatrix,1,max)
+    AdjustedqGmatrix <- FGmatrix/FGmatrix.max
+    AdjustedqG.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(AdjustedqGmatrix))
+    
+    SelectivityGillNetSSM<-ggplot(data=AdjustedqG.df,aes(x=age,y=catchability,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           xlab("Ages")+
+           ylab("Normalized Catchability (millions of feet * year)")+
+           scale_color_manual(values=colorRampPalette(coul)(length(years)))+
+           labs(color="Year")+
+           pubtheme
+    
+    # SelectivityGillNetSSM_AFS<-ggplot(data=AdjustedqG.df,aes(x=age,y=catchability,color=as.factor(year)))+
+    #                                   geom_line(size=1.25)+
+    #                                   xlab("Ages")+
+    #                                   ylab("Normalized Catchability (millions of feet * year)")+
+    #                                   scale_color_manual(values=colorRampPalette(coul)(length(years)))+
+    #                                   pubtheme+theme(legend.position = "none")
+    
+    #SCA
+    SelT.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="SelT"),2]
+    SelTmatrix.admb<-matrix(SelT.admb,nrow=length(ryears),ncol=length(ages))
+    SelTmatrix.matrix.max <- apply(SelTmatrix.admb,1,max)
+    AdjustedSelTmatrix.admb <- SelTmatrix.admb/SelTmatrix.matrix.max
+    AdjustedSelT.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),selectivity=c(AdjustedSelTmatrix.admb))
+    
+    SelectivityTrapNetSCAAdjusted<-ggplot(data=AdjustedSelT.admb.df,aes(x=age,y=selectivity,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           xlab("Ages")+
+           ylab("Selectivity")+
+           scale_color_manual(values=colorRampPalette(coul)(length(years)))+
+           labs(color="Year")+
+           pubtheme
+    
+    # SelectivityTrapNetSCAAdjusted_AFS<-ggplot(data=AdjustedSelT.admb.df,aes(x=age,y=selectivity,color=as.factor(year)))+
+    #                                           geom_line(size=1.25)+
+    #                                           xlab("Ages")+
+    #                                           ylab("Selectivity")+
+    #                                           scale_color_manual(values=colorRampPalette(coul)(length(years)))+
+    #                                           pubtheme+theme(legend.position = "none")
+    
+    
+    SelG.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="SelG"),2]
+    SelGmatrix.admb<-matrix(SelG.admb,nrow=length(ryears),ncol=length(ages))
+    SelGmatrix.matrix.max <- apply(SelGmatrix.admb,1,max)
+    AdjustedSelGmatrix.admb <- SelGmatrix.admb/SelGmatrix.matrix.max
+    AdjustedSelG.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),selectivity=c(AdjustedSelGmatrix.admb))
+    
+    SelectivityGillNetSCAAdjusted<-ggplot(data=AdjustedSelG.admb.df,aes(x=age,y=selectivity,color=as.factor(year)))+
+           geom_line(size=1.25)+
+           xlab("Ages")+
+           ylab("Selectivity")+
+           scale_color_manual(values=colorRampPalette(coul)(length(years)))+
+           labs(color="Year")+
+           pubtheme
+    
+    Selectivitylegend <- cowplot::get_legend(SelectivityGillNetSCAAdjusted)
+    
+    SelectivityGillNetSCAAdjusted <- SelectivityGillNetSCAAdjusted + theme(legend.position="none")
+    SelectivityTrapNetSCAAdjusted <- SelectivityTrapNetSCAAdjusted + theme(legend.position="none")
+    SelectivityGillNetSSM <- SelectivityGillNetSSM + theme(legend.position="none")
+    SelectivityTrapNetSSM <- SelectivityTrapNetSSM + theme(legend.position="none")
+    
+    jpeg('Selectivity.jpg',width=2400,height=1800)
+    grid.arrange(SelectivityGillNetSCAAdjusted,
+                 SelectivityGillNetSSM,
+                 Selectivitylegend,
+                 SelectivityTrapNetSCAAdjusted,
+                 SelectivityTrapNetSSM,
+                 ncol=3,
+                 layout_matrix = rbind(c(1,2,3), c(4,5,3)),
+                 widths = c(4, 4, 0.75), heights = c(3,3),)
+    dev.off() 
+    
+    
+    #############################################################################
+    
+    #CATCHABILITY
+    #############################################################################
+    #Specify color palette for catchability plots
+    coul<-brewer.pal(10,"Spectral")
+    
+    #SSM
+    qG <- exp(summary(sdr)[which(row.names(summary(sdr))=="log_qG"),1])
+    qGmatrix<-matrix(qG,nrow=length(ryears),ncol=length(ages))
+    qG.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(qGmatrix))
+    jpeg('CatchabilityGillNetSSM.jpg',width=1200,height=800)
+    plot(ggplot(data=qG.df,aes(x=year,y=catchability,color=as.factor(age)))+
+           geom_line(size=1.25)+
+           scale_color_manual(values=colorRampPalette(coul)(length(ages)))+
            xlab("Years")+
-           ylab("Number of fish (x1000)")+ylim(0,1800)+
-           pubtheme) #For presentations
+           ylab("Catchability (millions of feet * year)")+
+           ylim(0,0.125)+
+           labs(color="Age")+
+           pubtheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    qT <- exp(summary(sdr)[which(row.names(summary(sdr))=="log_qT"),1])
+    qTmatrix<-matrix(qT,nrow=length(ryears),ncol=length(asymptoteages))
+    qT.df <- data.frame(year=rep(ryears,length(asymptoteages)),age=rep(asymptoteages,each=length(ryears)),catchability=c(qTmatrix))
+    jpeg('CatchabilityTrapNetSSM.jpg',width=1200,height=800)
+    plot(ggplot(data=qT.df,aes(x=year,y=catchability,color=as.factor(age)))+
+           geom_line(size=1.25)+
+           scale_color_manual(values=colorRampPalette(coul)(length(asymptoteages)))+
+           xlab("Years")+
+           ylab("Catchability (100's of lifts * year)")+
+           ylim(0,0.04)+
+           labs(color="Age")+
+           pubtheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    #SCA
+    qG.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="qG"),2]
+    qGmatrix.admb <- SelGmatrix.admb*0
+    for(i in 1:nrow(SelGmatrix.admb))
+    {
+      qGmatrix.admb[i,]<-SelGmatrix.admb[i,]*qG.admb[i]
+    }
+    qG.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(qGmatrix.admb))
+    jpeg('CatchabilityGillNetSCA.jpg',width=1200,height=800)
+    plot(ggplot(data=qG.admb.df,aes(x=year,y=catchability,color=as.factor(age)))+
+           geom_line(size=1.25)+
+           scale_color_manual(values=colorRampPalette(coul)(length(ages)))+
+           xlab("Years")+
+           ylab("Catchability (millions of feet * year)")+
+           ylim(0,0.125)+
+           labs(color="Age")+
+           # ggtitle("Catchability of Gill Net by Age and Year of Lake Whitefish in WFM03")+
+           pubtheme+theme(legend.text = element_text( size = 24)))
+    dev.off()
+    
+    qT.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="qT"),2]
+    qTmatrix.admb <- SelTmatrix.admb*0
+    for(i in 1:nrow(SelTmatrix.admb))
+    {
+      qTmatrix.admb[i,]<-SelTmatrix.admb[i,]*qT.admb[i]
+    }
+    qT.admb.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(qTmatrix.admb))
+    jpeg('CatchabilityTrapNetSCA.jpg',width=1200,height=800)
+    plot(ggplot(data=qT.admb.df,aes(x=year,y=catchability,color=as.factor(age)))+
+           geom_line(size=1.25)+
+           scale_color_manual(values=colorRampPalette(coul)(length(ages)))+
+           xlab("Years")+
+           ylab("Catchability (100's of lifts * year)")+
+           ylim(0,0.04)+
+           labs(color="Age")+
+           # ggtitle("Catchability of Gill Net by Age and Year of Lake Whitefish in WFM03")+
+           pubtheme+theme(legend.text = element_text( size = 24)))
     dev.off()
     #############################################################################
     
@@ -1176,17 +1632,6 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     Z.df <- data.frame(ryears,morts=c(FG_Avg,FT_Avg,M))
     Z.type <- c(rep("FG",length(ryears)),rep("FT",length(ryears)),rep("M",length(ryears)))
     
-    jpeg('Mortality.jpg',width=1200,height=900)
-    plot(ggplot(Z.df,aes(ryears,morts))+
-           theme_bw()+
-           geom_bar(stat="identity",aes(fill=Z.type))+
-           ylab("Mortality")+
-           ylim(0,1.5)+
-           xlab("Years")+
-           scale_fill_manual(values=c("blueviolet","blue","lightblue"))+
-           pubtheme) #For Presentations
-    dev.off()                  
-    
     FG_Avg.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="FGill"),2]
     FT_Avg.admb <- ADMBdat.table[which(ADMBdat.table[,1]=="Ftrap"),2]
     M.admb <-  ADMBdat.table[which(ADMBdat.table[,1]=="M"),2]
@@ -1194,16 +1639,32 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     Z.df.admb <- data.frame(years,morts=c(FG_Avg.admb,FT_Avg.admb,M.admb))
     Z.type.admb <- c(rep("FG",length(years)),rep("FT",length(years)),rep("M",length(years)))
     
-    jpeg('MortalityADMB.jpg',width=1200,height=900)
-    plot(ggplot(Z.df.admb,aes(years,morts))+
-           theme_bw()+
+
+    Mortality<-ggplot(Z.df,aes(ryears,morts))+
+           geom_bar(stat="identity",aes(fill=Z.type))+
+           ylab("Mortality")+
+           ylim(0,1.5)+
+           xlab("Years")+
+           scale_fill_manual(values=c("deepskyblue","deepskyblue4","darkgrey"))+
+           annotate(geom="text",x=ryears[1], y=1.5, label="B",size=24,fontface="bold")+
+           labs(fill="Mortality Type")+
+           pubtheme+theme(legend.position = c(0.85,0.6)) #For Presentations
+    
+    MortalityADMB<-ggplot(Z.df.admb,aes(years,morts))+
            geom_bar(stat="identity",aes(fill=Z.type.admb))+
            ylab("Mortality")+
            ylim(0,1.5)+
            xlab("Years")+
            scale_fill_grey()+
-           pubtheme)
+           annotate(geom="text",x=ryears[1], y=1.5, label="A",size=24,fontface="bold")+
+           labs(fill="Mortality Type")+
+           pubtheme+theme(legend.position = c(0.85,0.6))
+                     
+    jpeg('Mortality.jpg',width=2400,height=900)
+    grid.arrange(MortalityADMB,Mortality,ncol=2)
     dev.off() 
+    
+
     #############################################################################
     
     #OBSERVED VERSUS PREDICTED HARVEST
@@ -1217,24 +1678,31 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     PredT <- summary(sdr)[which(row.names(summary(sdr))=="CT"),1]/1000
     PredG <- summary(sdr)[which(row.names(summary(sdr))=="CG"),1]/1000
     
-    jpeg('PredictedTrapHarvest.jpg',width=1200,height=900)
-    plot(ggplot()+geom_line(data=data.frame(years,ObsT),aes(x=years,y=ObsT),color="black",size=2)+
-           geom_line(data=data.frame(years,PredT.admb),aes(x=years,y=PredT.admb),color="darkgoldenrod1",linetype=2,size=2)+
-           geom_line(data=data.frame(ryears,PredT),aes(x=ryears,y=PredT),color="red",linetype=2,size=2)+
-           theme_bw()+
+    PredT.df<- data.frame(Year=rep(ryears),Model=rep(c("SCA","SSM"),each=length(ryears)),Prediction=c(PredT.admb,PredT))
+    PredG.df<- data.frame(Year=rep(ryears),Model=rep(c("SCA","SSM"),each=length(ryears)),Prediction=c(PredG.admb,PredG))
+      
+    jpeg('PredictedTrapHarvest.jpg',width=1200,height=800)
+    plot(ggplot(data=PredT.df,aes(x=Year,y=Prediction,color=as.factor(Model)))+
+           geom_line(data=data.frame(years,ObsT),aes(x=years,y=ObsT),color="black",size=2)+
+           geom_line(aes(color=Model),size=2,linetype="dotted")+
+           scale_color_manual(values=c('red','blue'))+
            xlab("Years")+
            ylab("Harvest (x1,000)")+ylim(0,600)+
-           pubtheme) #For presentations
+           theme(legend.text = element_text( size = 24))+
+           labs(color="Model")+
+           pubtheme)
     dev.off()
     
-    jpeg('PredictedGillHarvest.jpg',width=1200,height=900)
-    plot(ggplot()+geom_line(data=data.frame(years,ObsG),aes(x=years,y=ObsG),color="black",size=2)+
-           geom_line(data=data.frame(years,PredG.admb),aes(x=years,y=PredG.admb),color="darkgoldenrod1",linetype=2,size=2)+
-           geom_line(data=data.frame(ryears,PredG),aes(x=ryears,y=PredG),color="red",linetype=2,size=2)+
-           theme_bw()+
+    jpeg('PredictedGillHarvest.jpg',width=1200,height=800)
+    plot(ggplot(data=PredG.df,aes(x=Year,y=Prediction,color=as.factor(Model)))+
+           geom_line(data=data.frame(years,ObsG),aes(x=years,y=ObsG),color="black",size=2)+
+           geom_line(aes(color=Model),size=2,linetype="dotted")+
+           scale_color_manual(values=c('red','blue'))+
            xlab("Years")+
            ylab("Harvest (x1,000)")+ylim(0,600)+
-           pubtheme) #For presentations
+           theme(legend.text = element_text( size = 24))+
+           labs(color="Model")+
+           pubtheme)
     dev.off()
     #############################################################################
     
@@ -1247,10 +1715,9 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     Nmatrix<-matrix(summary(sdr)[which(row.names(summary(sdr))=="N"),1],nrow=length(ryears),ncol=length(ages))
     Abundance<- apply(Nmatrix,1,sum)/1000
     
-    jpeg('Abundance.jpg',width=1200,height=600)
+    jpeg('Abundance.jpg',width=1200,height=800)
     plot(ggplot()+
            geom_line(data=data.frame(ryears,Abundance),aes(x=ryears,y=Abundance),color="black",size=2)+
-           theme_bw()+
            xlab("Years")+
            ylab("Number of fish (x1000)")+ylim(0,5000)+
            pubtheme)
@@ -1261,10 +1728,9 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     #############################################################################
     SP_BIO <-summary(sdr)[which(row.names(summary(sdr))=="SP_BIO"),1]/1000*2.20462
     
-    jpeg('SSBiomass.jpg',width=1200,height=600)
+    jpeg('SSBiomass.jpg',width=1200,height=800)
     plot(ggplot()+
            geom_line(data=data.frame(ryears,SP_BIO),aes(x=ryears,y=SP_BIO),color="black",size=2)+
-           theme_bw()+
            xlab("Years")+
            ylab("Spawning Stock Biomass (x1000) lbs")+ylim(0,7000)+
            pubtheme)
@@ -1276,10 +1742,9 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     Nmatrix<-matrix(summary(sdr)[which(row.names(summary(sdr))=="N"),1],nrow=length(ryears),ncol=length(ages))
     Recruitment <- Nmatrix[,1]/1000
     
-    jpeg('Recruitment.jpg',width=1200,height=600)
+    jpeg('Recruitment.jpg',width=1200,height=800)
     plot(ggplot()+
            geom_line(data=data.frame(ryears,Recruitment),aes(x=ryears,y=Recruitment),color="black",size=2)+
-           theme_bw()+
            xlab("Years")+
            ylab("Number of fish (x1000)")+ylim(0,1800)+
            pubtheme)
@@ -1293,12 +1758,12 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     AdjustedqTmatrix <- FTmatrix/FTmatrix.max
     AdjustedqT.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(AdjustedqTmatrix))
     
-    jpeg('SelectivityTrapNet.jpg',width=1200,height=600)
+    jpeg('SelectivityTrapNet.jpg',width=1200,height=800)
     plot(ggplot(data=AdjustedqT.df,aes(x=age,y=catchability,color=as.factor(year)))+
            geom_line(size=1.25)+
-           theme_bw()+
            xlab("Ages")+
-           ylab("Normalized Catchability")+
+           ylab("Normalized Catchability (100's of lifts * year)")+
+           labs(color="Year")+
            pubtheme+theme(legend.text = element_text( size = 24)))
     dev.off()
     
@@ -1307,66 +1772,44 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     AdjustedqGmatrix <- FGmatrix/FGmatrix.max
     AdjustedqG.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(AdjustedqGmatrix))
     
-    jpeg('SelectivityGillNet.jpg',width=1200,height=600)
+    jpeg('SelectivityGillNet.jpg',width=1200,height=800)
     plot(ggplot(data=AdjustedqG.df,aes(x=age,y=catchability,color=as.factor(year)))+
            geom_line(size=1.25)+
-           theme_bw()+
            xlab("Ages")+
-           ylab("Normalized Catchability")+
+           ylab("Normalized Catchability (millions of feet * year)")+
+           labs(color="Year")+
            pubtheme+theme(legend.text = element_text( size = 24)))
     dev.off()
     #############################################################################
     
     #CATCHABILITY
     #############################################################################
-    #Function from colorspace I needed to specify color scale:
-    pal<-function (n, h = c(300, 123), c = 74, l = c(33, 85), power = 0.955555555555556, 
-                   fixup = TRUE, gamma = NULL, alpha = 1, ...) 
-    {
-      if (!is.null(gamma)) 
-        warning("'gamma' is deprecated and has no effect")
-      if (n < 1L) 
-        return(character(0L))
-      h <- rep(h, length.out = 2L)
-      c <- c[1L]
-      l <- rep(l, length.out = 2L)
-      power <- rep(power, length.out = 2L)
-      rval <- seq(1, -1, length = n)
-      rval <- hex(polarLUV(L = l[2L] - diff(l) * abs(rval)^power[2L], 
-                           C = c * abs(rval)^power[1L], H = ifelse(rval > 0, h[1L], 
-                                                                   h[2L])), fixup = fixup, ...)
-      if (!missing(alpha)) {
-        alpha <- pmax(pmin(alpha, 1), 0)
-        alpha <- format(as.hexmode(round(alpha * 255 + 0.0001)), 
-                        width = 2L, upper.case = TRUE)
-        rval <- paste(rval, alpha, sep = "")
-      }
-      return(rval)
-    }
+    #Specify color palette for catchability plots
+    coul<-brewer.pal(10,"Spectral")
     
     qG <- exp(summary(sdr)[which(row.names(summary(sdr))=="log_qG"),1])
     qGmatrix<-matrix(qG,nrow=length(ryears),ncol=length(ages))
     qG.df <- data.frame(year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)),catchability=c(qGmatrix))
-    jpeg('CatchabilityGillNet.jpg',width=1200,height=600)
+    jpeg('CatchabilityGillNet.jpg',width=1200,height=800)
     plot(ggplot(data=qG.df,aes(x=year,y=catchability,color=as.factor(age)))+
            geom_line(size=1.25)+
-           theme_bw()+
-           scale_color_manual(values=pal(length(ages)))+
+           scale_color_manual(values=colorRampPalette(coul)(length(ages)))+
            xlab("Years")+
-           ylab("Catchability")+
+           ylab("Catchability (millions of feet * year)")+
+           labs(color="Age")+
            pubtheme+theme(legend.text = element_text( size = 24)))
     dev.off()
     
     qT <- exp(summary(sdr)[which(row.names(summary(sdr))=="log_qT"),1])
     qTmatrix<-matrix(qT,nrow=length(ryears),ncol=length(asymptoteages))
     qT.df <- data.frame(year=rep(ryears,length(asymptoteages)),age=rep(asymptoteages,each=length(ryears)),catchability=c(qTmatrix))
-    jpeg('CatchabilityTrapNet.jpg',width=1200,height=600)
+    jpeg('CatchabilityTrapNet.jpg',width=1200,height=800)
     plot(ggplot(data=qT.df,aes(x=year,y=catchability,color=as.factor(age)))+
            geom_line(size=1.25)+
-           theme_bw()+
-           scale_color_manual(values=pal(length(asymptoteages)))+
+           scale_color_manual(values=colorRampPalette(coul)(length(asymptoteages)))+
            xlab("Years")+
-           ylab("Catchability")+
+           ylab("Catchability (100's of lifts * year)")+
+           labs(color="Age")+
            pubtheme+theme(legend.text = element_text( size = 24)))
     dev.off()
     #############################################################################
@@ -1384,7 +1827,6 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     
     jpeg('Mortality.jpg',width=1200,height=900)
     plot(ggplot(Z.df,aes(ryears,morts))+
-           theme_bw()+
            geom_bar(stat="identity",aes(fill=Z.type))+
            ylab("Mortality")+
            ylim(0,1.5)+
@@ -1402,21 +1844,19 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
     PredT <- summary(sdr)[which(row.names(summary(sdr))=="CT"),1]/1000
     PredG <- summary(sdr)[which(row.names(summary(sdr))=="CG"),1]/1000
     
-    jpeg('PredictedTrapHarvest.jpg',width=1200,height=900)
+    jpeg('PredictedTrapHarvest.jpg',width=1200,height=800)
     plot(ggplot()+geom_line(data=data.frame(years,ObsT),aes(x=years,y=ObsT),color="black",size=2)+
            geom_line(data=data.frame(ryears,PredT),aes(x=ryears,y=PredT),color="black",linetype=2,size=2)+
-           theme_bw()+
            xlab("Years")+
-           ylab("Harvest (x1,000)")+ylim(0,600)+
+           ylab("Harvest (x1,000) lbs")+ylim(0,600)+
            pubtheme)
     dev.off()
     
-    jpeg('PredictedGillHarvest.jpg',width=1200,height=600)
+    jpeg('PredictedGillHarvest.jpg',width=1200,height=800)
     plot(ggplot()+geom_line(data=data.frame(years,ObsG),aes(x=years,y=ObsG),color="black",size=2)+
            geom_line(data=data.frame(ryears,PredG),aes(x=ryears,y=PredG),color="black",linetype=2,size=2)+
-           theme_bw()+
            xlab("Years")+
-           ylab("Harvest (x1,000)")+ylim(0,600)+
+           ylab("Harvest (x1,000) lbs")+ylim(0,600)+
            pubtheme)
     dev.off()
     #############################################################################
@@ -1430,6 +1870,12 @@ savegraphspublication<-function(checkagainstADMB=F,oridinalwd,newwd,sdr,data)
 #############################################################################
 saveresiduals <- function(originalwd,newwd,sdr,data)
 {
+  pubtheme <- theme(axis.title=element_text(size=32),axis.text=element_text(size=32),
+                    panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                    panel.background = element_blank(), axis.line = element_line(colour = "black"),
+                    axis.text.x = element_text(color="black",size=24),
+                    axis.text.y = element_text(color="black",size=24,angle=90,hjust=0.5))
+  
   setwd(newwd)
   years=data$years
   ryears=data$ryears
@@ -1460,22 +1906,24 @@ saveresiduals <- function(originalwd,newwd,sdr,data)
   
   zeroline <- rep(0,length(ryears))
   
-  jpeg("Gill Net Catch Residual.jpg",width=600,height=480)
+  jpeg("Gill Net Catch Residual.jpg",width=1200,height=600)
   plot(ggplot()+geom_point(data=data.frame(residCG,ryears),aes(x=ryears,y=residCG),size=3,color="red")+
          geom_line(data=data.frame(ryears,zeroline),aes(x=ryears,y=zeroline),size=1)+
          theme_bw()+
          ggtitle("Gill Net Catch Residuals")+
          xlab("Years")+
-         ylab("Residual"))
+         ylab("Residual")+
+         pubtheme)
   dev.off()
   
-  jpeg("Trap Net Catch Residual.jpg",width=600,height=480)
+  jpeg("Trap Net Catch Residual.jpg",width=1200,height=600)
   plot(ggplot()+geom_point(data=data.frame(residCT,ryears),aes(x=ryears,y=residCT),size=3,color="red")+
          geom_line(data=data.frame(ryears,zeroline),aes(x=ryears,y=zeroline),size=1)+
          theme_bw()+
          ggtitle("Trap Net Catch Residuals")+
          xlab("Years")+
-         ylab("Residual"))
+         ylab("Residual")+
+         pubtheme)
   dev.off()
   
   #Function from colorspace I needed to specify color scale:
@@ -1512,7 +1960,8 @@ saveresiduals <- function(originalwd,newwd,sdr,data)
          scale_color_manual(values=pal(length(ages)))+
          ggtitle("Trap Net Proportion at Age Residuals")+
          xlab("Years")+
-         ylab("Residual"))
+         ylab("Residual")+
+         pubtheme)
   dev.off()
   
   residPAG.df <- data.frame(residPAG,year=rep(ryears,length(ages)),age=rep(ages,each=length(ryears)))
@@ -1524,7 +1973,8 @@ saveresiduals <- function(originalwd,newwd,sdr,data)
          scale_color_manual(values=pal(length(ages)))+
          ggtitle("Gill Net Proportion at Age Residuals")+
          xlab("Years")+
-         ylab("Residual"))
+         ylab("Residual")+
+         pubtheme)
   dev.off()
   
   # Pull out the correlation values between years of catchability process error
@@ -1542,7 +1992,8 @@ saveresiduals <- function(originalwd,newwd,sdr,data)
          scale_color_manual(values=pal(length(asymptoteages)))+
          ggtitle(paste("Trap Net Catchability Process Error Residuals, correlation: ",round(resid_effT.cor,4),sep=""))+
          xlab("Years")+
-         ylab("Residual"))
+         ylab("Residual")+
+         pubtheme)
   dev.off()
   
   resid_effG.df <- data.frame(resid_effG,year=rep(ryears[1:length(ryears)-1],length(ages)),age=rep(ages,each=(length(ryears)-1)))
@@ -1554,7 +2005,8 @@ saveresiduals <- function(originalwd,newwd,sdr,data)
          scale_color_manual(values=pal(length(ages)))+
          ggtitle(paste("Gill Net Catchability Process Error Residuals, correlation: ",round(resid_effG.cor,4),sep=""))+
          xlab("Years")+
-         ylab("Residual"))
+         ylab("Residual")+
+         pubtheme)
   dev.off()
   
   jpeg("Trap Net Catchability Residuals Correlation.jpg",width=1200,height=1200)
@@ -1571,12 +2023,12 @@ saveresiduals <- function(originalwd,newwd,sdr,data)
   
   jpeg("Residuals Histograms.jpg",width=1200,height=1440)
   par(mfrow=c(3,2))
-  hist(residCT,main="Trap Catch Residuals")
-  hist(residCG,main="Gill Catch Residuals")
-  hist(residPAT,main="Proportion at age Trap Residuals")
-  hist(residPAG,main="Proportion at age Gill Residuals")
-  hist(resid_effT,main="Trap Catchability Process Error Residuals")
-  hist(resid_effG,main="Gill Catchability Process Error Residuals")
+  hist(residCT,main="",xlab="",ylab="",cex.axis=3)
+  hist(residCG,main="",xlab="",ylab="",cex.axis=3)
+  hist(residPAT,main="",xlab="",ylab="",cex.axis=3)
+  hist(residPAG,main="",xlab="",ylab="",cex.axis=3)
+  hist(resid_effT,main="",xlab="",ylab="",cex.axis=3)
+  hist(resid_effG,main="",xlab="",ylab="",cex.axis=3)
   dev.off()
   
   sink("Residuals_Shapiro_Test_Output.txt")
@@ -1676,6 +2128,9 @@ saveretroplots <- function(originalwd,retrowd,retrostart,retroend,data)
 #############################################################################
 simmodel <- function(data,obj,parameters,agecompfit,modelname,originalwd,newwd,estimateESS,maxreps,numsims=1,ESS_W_T_SIM=c(0.11,0.057))
 {
+  #Count how many times the simulated data didn't converge
+  noconverge=0
+  
   # Create a new folder and optional working directory to store just the results of the simulation
   simresultswd<-paste(newwd,"/simresults",sep='')
   if(!dir.exists(simresultswd)){dir.create(simresultswd)}
@@ -1698,9 +2153,19 @@ simmodel <- function(data,obj,parameters,agecompfit,modelname,originalwd,newwd,e
   Biomassrelativeerror <-matrix(NA,nrow=length(ryears),ncol=numsims)
   SPBiomassrelativeerror <-matrix(NA,nrow=length(ryears),ncol=numsims)
   
+  Abundanceabsoluteerror <-matrix(NA,nrow=length(ryears),ncol=numsims)
+  Recruitmentabsoluteerror <-matrix(NA,nrow=length(ryears),ncol=numsims)
+  FGabsoluteerror <-matrix(NA,nrow=length(ryears),ncol=numsims)
+  FTabsoluteerror <-matrix(NA,nrow=length(ryears),ncol=numsims)
+  Biomassabsoluteerror <-matrix(NA,nrow=length(ryears),ncol=numsims)
+  SPBiomassabsoluteerror <-matrix(NA,nrow=length(ryears),ncol=numsims)
+  
   setwd(simresultswd)
   sink("SimResults.txt",append=T)
   cat("Start of a new set of simulation results: ")
+  cat("\n")
+  cat("Total number of simulations (intended): ")
+  cat(numsims)
   cat("\n")
   sink()
   
@@ -1717,9 +2182,13 @@ simmodel <- function(data,obj,parameters,agecompfit,modelname,originalwd,newwd,e
     #Simulate composition and yield data from the simulate function and fitted model object:
     simres <- obj$simulate()
     
+    #Slow down and look at the data, trying to find what kind of simulated data messes the code
+    # print(simres)
+    # readline(prompt="press [enter] to continue")
+    
     #Specify random effects, depending on age comp likelihood
     if(agecompfit==1){reffects <- c("log_rec","log_qG","log_qT")}
-    if(agecompfit==2){reffects <- c("log_rec","log_qG","log_qT","log_gamT","log_gamG")}
+    if(agecompfit==3){reffects <- c("log_rec","log_qG","log_qT","log_gamT","log_gamG")}
     
     #Set most of the data the same (start by setting simdata to data), but replace the different composition and yield:
     #If you are planning to estimate the effective sample sizes, the intital run has to start with ESS=SS (same as real sample size)
@@ -1743,8 +2212,16 @@ simmodel <- function(data,obj,parameters,agecompfit,modelname,originalwd,newwd,e
     simobj <- setmodel(simdata,parameters,agecompfit,modelname,mymapinput = mymap)
     
     #Fit and report the model
-    # simfit <- nlminb(simobj$par, simobj$fn, simobj$gr,lower=lower_bounds,upper=upper_bounds)
-    simfit <- nlminb(simobj$par, simobj$fn, simobj$gr)
+    simfit <- fitmodel(simobj,bounds)
+    # simfit <- nlminb(simobj$par, simobj$fn, simobj$gr,lower=bounds$lower_bounds,upper=bounds$upper_bounds)
+    # simfit <- nlminb(simobj$par, simobj$fn, simobj$gr)
+
+    if(is.na(simfit))
+    {
+      noconverge=noconverge+1
+    }
+    else
+    {
     simsdr <- sdreport(simobj)
     
     # IF you are also calculating weights for composition data ESS, follow this track, else the weights stay as 1
@@ -1871,11 +2348,13 @@ simmodel <- function(data,obj,parameters,agecompfit,modelname,originalwd,newwd,e
       simNmatrix<-matrix(summary(simsdr)[which(row.names(summary(simsdr))=="N"),1],nrow=length(ryears),ncol=length(ages))
       simAbundance<- apply(simNmatrix,1,sum)/1000
       Abundancerelativeerror[,i]<-(simAbundance-Abundance)/Abundance
+      Abundanceabsoluteerror[,i]<-(simAbundance-Abundance)
       
       #Recruitment
       Recruitment <- Nmatrix[,1]/1000
       simRecruitment <- simNmatrix[,1]/1000
       Recruitmentrelativeerror[,i]<-(simRecruitment-Recruitment)/Recruitment
+      Recruitmentabsoluteerror[,i]<-(simRecruitment-Recruitment)
       
       #F
       FG<-matrix(summary(sdr)[which(row.names(summary(sdr))=="FG"),1],nrow=length(ryears),ncol=length(ages))
@@ -1888,6 +2367,8 @@ simmodel <- function(data,obj,parameters,agecompfit,modelname,originalwd,newwd,e
       simFT_Avg<-apply(simFT,1,mean)
       FGrelativeerror[,i]<-(simFG_Avg-FG_Avg)/FG_Avg
       FTrelativeerror[,i]<-(simFT_Avg-FT_Avg)/FT_Avg
+      FGabsoluteerror[,i]<-(simFG_Avg-FG_Avg)
+      FTabsoluteerror[,i]<-(simFT_Avg-FT_Avg)
       
       #Biomass
       BIOMASS <- summary(sdr)[which(row.names(summary(sdr))=="BIOMASS"),1]/1000*2.20462
@@ -1896,6 +2377,8 @@ simmodel <- function(data,obj,parameters,agecompfit,modelname,originalwd,newwd,e
       simSP_BIO <-summary(simsdr)[which(row.names(summary(simsdr))=="SP_BIO"),1]/1000*2.20462
       Biomassrelativeerror[,i]<-(simBIOMASS-BIOMASS)/BIOMASS
       SPBiomassrelativeerror[,i]<-(simSP_BIO-SP_BIO)/SP_BIO
+      Biomassabsoluteerror[,i]<-(simBIOMASS-BIOMASS)
+      SPBiomassabsoluteerror[,i]<-(simSP_BIO-SP_BIO)
       
       setwd(simresultswd)
       sink("SimResults.txt",append=T)
@@ -1919,10 +2402,27 @@ simmodel <- function(data,obj,parameters,agecompfit,modelname,originalwd,newwd,e
       sink()
       setwd(originalwd)
     }
+  }
     
     #Just to be sure the simulation process begins afresh, remove all previous objects
-    rm("simres","simdata","simobj","simfit","simsdr")
+    if(is.na(simfit))
+    {
+      rm("simres","simdata","simobj","simfit")
+    }
+    else
+    {
+      rm("simres","simdata","simobj","simfit","simsdr")
+    }
   }
+  
+  setwd(simresultswd)
+  sink("SimResults.txt",append=T)
+  cat("\n")
+  cat("\n")
+  cat("Number of times model didn't converge: ")
+  cat(noconverge)
+  sink()
+  setwd(originalwd)
   
   #At this point, all the simulations have been iterated through and errors calculated.
   #What follows are the boxplots of the errors:
@@ -2025,6 +2525,97 @@ simmodel <- function(data,obj,parameters,agecompfit,modelname,originalwd,newwd,e
          scale_fill_grey()+
          xlab("Years")+
          ylab("Relative Error of Estimated Spawning Stock Biomass"))
+  dev.off()
+  
+  
+  # Calculate and Plot boxplot of N Error
+  Abundanceabsoluteerror.df=data.frame()
+  for(i in 1:length(ryears)){
+    Abundanceabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),1] <- Abundanceabsoluteerror[i,]
+    Abundanceabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),2] <- ryears[i]
+  }
+  names(Abundanceabsoluteerror.df)=c("Difference","Years")
+  jpeg("AbundanceAbsoluteErrorBoxplot.jpg",width=400,height=200)
+  plot(ggplot(data=Abundancerelativeerror.df,aes(y=Difference,group=Years))+
+         geom_boxplot()+
+         scale_fill_grey()+
+         xlab("Years")+
+         ylab("Absolute Error of Estimated N"))
+  dev.off()
+  
+  # Calculate and Plot boxplot of Recruitment Error
+  Recruitmentabsoluteerror.df=data.frame()
+  for(i in 1:length(ryears)){
+    Recruitmentabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),1] <- Recruitmentabsoluteerror[i,]
+    Recruitmentabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),2] <- ryears[i]
+  }
+  names(Recruitmentabsoluteerror.df)=c("Difference","Years")
+  jpeg("RecruitmentAbsoluteErrorBoxplot.jpg",width=400,height=200)
+  plot(ggplot(data=Recruitmentabsoluteerror.df,aes(y=Difference,group=Years))+
+         geom_boxplot()+
+         scale_fill_grey()+
+         xlab("Years")+
+         ylab("Absolute Error of Estimated Recruitment"))
+  dev.off()
+  
+  # Calculate and Plot boxplot of Gill Net Mortality Error
+  FGabsoluteerror.df=data.frame()
+  for(i in 1:length(ryears)){
+    FGabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),1] <- FGabsoluteerror[i,]
+    FGabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),2] <- ryears[i]
+  }
+  names(FGabsoluteerror.df)=c("Difference","Years")
+  jpeg("FGAbsoluteErrorBoxplot.jpg",width=400,height=200)
+  plot(ggplot(data=FGabsoluteerror.df,aes(y=Difference,group=Years))+
+         geom_boxplot()+
+         scale_fill_grey()+
+         xlab("Years")+
+         ylab("Absolute Error of Estimated Gill Net Mortality"))
+  dev.off()
+  
+  # Calculate and Plot boxplot of Trap Net Mortality Error
+  FTabsoluteerror.df=data.frame()
+  for(i in 1:length(ryears)){
+    FTabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),1] <- FTabsoluteerror[i,]
+    FTabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),2] <- ryears[i]
+  }
+  names(FTabsoluteerror.df)=c("Difference","Years")
+  jpeg("FTAbsoluteErrorBoxplot.jpg",width=400,height=200)
+  plot(ggplot(data=FTabsoluteerror.df,aes(y=Difference,group=Years))+
+         geom_boxplot()+
+         scale_fill_grey()+
+         xlab("Years")+
+         ylab("Absolute Error of Estimated Trap Net Mortality"))
+  dev.off()
+  
+  # Calculate and Plot boxplot of Biomass Error
+  Biomassabsoluteerror.df=data.frame()
+  for(i in 1:length(ryears)){
+    Biomassabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),1] <- Biomassabsoluteerror[i,]
+    Biomassabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),2] <- ryears[i]
+  }
+  names(Biomassabsoluteerror.df)=c("Difference","Years")
+  jpeg("BiomassAbsoluteErrorBoxplot.jpg",width=400,height=200)
+  plot(ggplot(data=Biomassabsoluteerror.df,aes(y=Difference,group=Years))+
+         geom_boxplot()+
+         scale_fill_grey()+
+         xlab("Years")+
+         ylab("Absolute Error of Estimated Biomass"))
+  dev.off()
+  
+  # Calculate and Plot boxplot of Biomass Error
+  SPBiomassabsoluteerror.df=data.frame()
+  for(i in 1:length(ryears)){
+    SPBiomassabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),1] <- SPBiomassabsoluteerror[i,]
+    SPBiomassabsoluteerror.df[((i*numsims)-(numsims-1)):(i*numsims),2] <- ryears[i]
+  }
+  names(SPBiomassabsoluteerror.df)=c("Difference","Years")
+  jpeg("SPBiomassAbsoluteErrorBoxplot.jpg",width=400,height=200)
+  plot(ggplot(data=SPBiomassabsoluteerror.df,aes(y=Difference,group=Years))+
+         geom_boxplot()+
+         scale_fill_grey()+
+         xlab("Years")+
+         ylab("Absolute Error of Estimated Spawning Stock Biomass"))
   dev.off()
   
   #Set original working directory and return the large ob

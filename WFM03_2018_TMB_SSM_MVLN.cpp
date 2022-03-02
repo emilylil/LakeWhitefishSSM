@@ -102,6 +102,11 @@ Type objective_function<Type>::operator() ()
   DATA_SCALAR(reflenG);
   DATA_SCALAR(reflenT);
   
+  //Values for calculating SD from catch at age for fitting MVLN
+  // DATA_SCALAR(Aval);
+  // DATA_SCALAR(Bval);
+  // DATA_SCALAR(Cval);
+  
   //Optional section to output all the input values to check it worked:
   // std::cout<<"fyear: "<<fyear<<std::endl;
   // std::cout<<"lyear: "<<lyear<<std::endl;
@@ -179,23 +184,28 @@ Type objective_function<Type>::operator() ()
   
   //II. PARAMETER DECLARATION
   //---------------------------------------------------------------------------------------------
+  PARAMETER(log_sig); //Log scale standard deviation around total catch
   PARAMETER(log_sdSR); //Log scale standard deviation around recruitment
   
   PARAMETER(log_sd_logeffortT); //Log scale standard deviation around age- year- specific trap catchability
   PARAMETER(log_sd_logeffortG); //Log scale standard deviation around age- year- specific gill catchability
   PARAMETER(logit_rhoalphaT); //Logit scale estimated inter-age correlation of catchability in trap net
   PARAMETER(logit_rhoalphaG); //Logit scale estimated inter-age correlation of catchability in gill net
-  
-  PARAMETER(log_sd_logcatchT); //Log scale standard deviation around age- year- specific trap catchability
-  PARAMETER(log_sd_logcatchG); //Log scale standard deviation around age- year- specific gill catchability
+
+  //PARAMETER_VECTOR(log_sd_logcatchT); //Log scale standard deviation around age- year- specific trap catchability
+  //PARAMETER_VECTOR(log_sd_logcatchG); //Log scale standard deviation around age- year- specific gill catchability
   PARAMETER(logit_rhoalphacatchT); //Logit scale estimated inter-age correlation of catchability in trap net
   PARAMETER(logit_rhoalphacatchG); //Logit scale estimated inter-age correlation of catchability in gill net
-  
+
   PARAMETER(lnM); //Log scale natural mortality
   PARAMETER_MATRIX(log_qT); //Log scale age- and year- specific catchability, trap net
   PARAMETER_MATRIX(log_qG); //Log scale age- and year- specific catchability, gill net
-  
+
   PARAMETER_VECTOR(log_rec); //Log scale recruitment values
+  
+  PARAMETER(Aval);
+  PARAMETER(Bval);
+  PARAMETER(Cval);
   // PARAMETER(lnZavg);
   //---------------------------------------------------------------------------------------------
   
@@ -203,47 +213,48 @@ Type objective_function<Type>::operator() ()
   //---------------------------------------------------------------------------------------------
   //Back transformed parameter quantities:
   Type sdSR; //SD of Process error around random walk recruitment
-  
+
   vector<Type> sd_logeffortT(asymptoteages.size()); //SD of Process error on trap net catchability
   vector<Type> sd_logeffortG(ages.size()); //SD of Process error on gill net catchability
   Type rhoalphaT; //Inter-age correlation of catchability in trap net
   Type rhoalphaG; //Inter-age correlation of catchability in gill net
-  
-  vector<Type> sd_logcatchT(ages.size()); //SD of observation error on trap net catch
-  vector<Type> sd_logcatchG(ages.size()); //SD of observation error on gill net catch
+
+  // vector<Type> sd_logcatchT(ages.size()); //SD of observation error on trap net catch
+  // vector<Type> sd_logcatchG(ages.size()); //SD of observation error on gill net catch
   Type rhoalphacatchT; //Inter-age correlation of catch residuals in trap net
   Type rhoalphacatchG; //Inter-age correlation of catch residuals in gill net
-  
+
   Type M;
   matrix<Type> qT(ryears.size(),ages.size()); //Age- and year- specific catchability, trap net
   matrix<Type> qG(ryears.size(),ages.size()); //Age- and year- specific catchability, gill net
 
   //Other necessary coding values
-  int i; 
-  int j; 
+  int i;
+  int j;
+  int k;
   int counter; //counting variable that makes filling init pop easier
-  
+
   //Necessary for doing multivariate normal distribution stuff
   using namespace density;
-  
+
   //1. Growths and Eggs
   matrix<Type> G(ryears.size(),ages.size()); //Instantaneous Growth rate
   matrix<Type> pop_WA(ryears.size(),ages.size()); //Weight at age, beginning of year
   matrix<Type> spawn_WA(ryears.size(),ages.size()); //Weight at age, spawning time
   matrix<Type> harv_WA(ryears.size(),ages.size()); //Weight at age, harvest time
-  
+
   vector<Type> eggs_per_female; //Calculated eggs per female
   matrix<Type> wght_fac;
   matrix<Type> egg_fac;
-  
+
   //2. Fishing Mortality
   matrix<Type> effort_devsT(ryears.size()-1,asymptoteages.size()); //Random walk error between trap net catchability
   matrix<Type> effort_devsG(ryears.size()-1,ages.size()); //Random walk error between gill net catchability
-  
+
   matrix<Type> FT(ryears.size(),ages.size()); //Trap net fishing mortality
   matrix<Type> FG(ryears.size(),ages.size()); //Gill net fishing mortality
   matrix<Type> F; //Total fishing mortality
-  
+
   //3. Natural and Total Mortality
   matrix<Type> Z(ryears.size(),ages.size());
   matrix<Type> S(ryears.size(),ages.size());
@@ -251,26 +262,26 @@ Type objective_function<Type>::operator() ()
   matrix<Type> S_spawn(ryears.size(),ages.size());
   matrix<Type> MD;
   vector<Type> AvgZFirstYears;
-  
+
   //4. Recruitment
   matrix<Type> N(ryears.size(),ages.size());
   vector<Type> log_rec_devs(ryears.size()+ages.size()-6); //Recruitment deviations in random walk
-    
+
   //5. Abundance
   matrix<Type> N_spawn(ryears.size(),ages.size());
-  
+
   //6. Biomass
   vector<Type> BIOMASS(ryears.size());
   vector<Type> BIOMASSATAGE;
-  
+
   //7. Spawning Stock Biomass
   vector<Type> SP_BIO(ryears.size());
   vector<Type> SP_BIOAGE;
-  
+
   //8. Number of Eggs
   vector<Type> eggs(ryears.size());
   vector<Type> eggsatage;
-  
+
   //9. Expected Catch and Catch at Age
   matrix<Type> CAT;
   matrix<Type> CAG;
@@ -280,17 +291,17 @@ Type objective_function<Type>::operator() ()
   vector<Type> CG(ryears.size());
   matrix<Type> PAT(ryears.size(),ages.size());
   matrix<Type> PAG(ryears.size(),ages.size());
-  
+
   //10. Expected Biomass
   vector<Type> BT;
   vector<Type> BG;
-  
+
   //11. Standardized Residuals
   matrix<Type> prodPAT(ryears.size(),ages.size());
   matrix<Type> prodPAG(ryears.size(),ages.size());
   vector<Type> Ntrap;
   vector<Type> Ngill;
-  
+
   matrix<Type> denomT(ryears.size(),ages.size());
   matrix<Type> denomG(ryears.size(),ages.size());
   matrix<Type> residPAT;
@@ -299,7 +310,7 @@ Type objective_function<Type>::operator() ()
   matrix<Type> resid_effG(ryears.size()-1,ages.size());
   matrix<Type> residCAT(ryears.size(),ages.size());
   matrix<Type> residCAG(ryears.size(),ages.size());
-  
+
   //12. Projected Values
   vector<Type> Fproj;
   vector<Type> FTproj;
@@ -308,11 +319,11 @@ Type objective_function<Type>::operator() ()
   vector<Type> Sproj;
   vector<Type> Mproj;
   vector<Type> Sproj_BASE;
-  
+
   vector<Type> Sproj_T(ages.size());
   vector<Type> wfacproj;
   vector<Type> watageproj;
-  
+
   //13. Reference Points
   Type YPR;
   vector<Type> Psurv(ages.size());
@@ -324,11 +335,11 @@ Type objective_function<Type>::operator() ()
   Type SPR;
   Type SPR_T;
   Type SSBR_RATIO_ET;
-  
+
   Type RecSum;
   Type Rec_avg;
   vector<Type> RecVec(ryears.size());
-  
+
   Type AvgBiomasslb;
   Type AvgSPbiomasslb;
   Type AvgF_gill;
@@ -341,29 +352,40 @@ Type objective_function<Type>::operator() ()
   Type YPRlb;
   vector<Type> Aproj;
   Type avg_A;
-  
+
   //14. Objective Functions
+  Type sd_logCG;
+  Type sd_logCT;
+  matrix<Type> sd_logCGmatrix(ryears.size(),ages.size());
+  matrix<Type> sd_logCTmatrix(ryears.size(),ages.size());
+  
+  vector<Type> nonzeroyearsT(ages.size());
+  vector<Type> nonzeroyearsG(ages.size());
+  
   Type NLL;
   Type NLP;
   Type f;
-  
+
   Type avg_F;
-  
+
   matrix<Type> cormatT(asymptoteages.size(),asymptoteages.size()); //Correlation matrix of age-specific catchability, trap net
   matrix<Type> cormatG(ages.size(),ages.size()); //Correlation matrix of age-specific catchability, gill net
   matrix<Type> sd_logeffortT_diag(asymptoteages.size(),asymptoteages.size()); //Matrix with SD process error values on diagonal
   matrix<Type> sd_logeffortG_diag(ages.size(),ages.size());
   matrix<Type> varcovT; //Variance-Covariance matrix made from sd and correlation of catchability random walk trap net
   matrix<Type> varcovG; //Variance-Covariance matrix made from sd and correlation of catchability random walk gill net
-  
+
   matrix<Type> cormatcatchT(ages.size(),ages.size()); //Correlation matrix of age-specific catch residuals, trap net
   matrix<Type> cormatcatchG(ages.size(),ages.size()); //Correlation matrix of age-specific catch residuals, gill net
-  matrix<Type> sd_logcatchT_diag(ages.size(),ages.size()); //Matrix with SD process error values on diagonal
-  matrix<Type> sd_logcatchG_diag(ages.size(),ages.size());
-  matrix<Type> varcovcatchT; //Variance-Covariance matrix made from sd and correlation of catchability random walk trap net
-  matrix<Type> varcovcatchG; //Variance-Covariance matrix made from sd and correlation of catchability random walk gill net
+  vector<matrix<Type> > sd_logcatchT_diag(ryears.size()); //Matrix with SD process error values on diagonal
+  vector<matrix<Type> > sd_logcatchG_diag(ryears.size());
+  vector<matrix<Type> > varcovcatchT(ryears.size()); //Variance-Covariance matrix made from sd and correlation of catchability random walk trap net
+  vector<matrix<Type> > varcovcatchG(ryears.size()); //Variance-Covariance matrix made from sd and correlation of catchability random walk gill net
 
-
+  //Three values that determine SD from Catch (SD=A+B*exp(-C*Catch))
+  // Type Aval;
+  // Type Bval;
+  // Type Cval;
 
   //III. SETTING INTITAL VALUES FOR DATA AND BACK TRASFORMING PARAMETERS ("Pre-function" section)
   //---------------------------------------------------------------------------------------------
@@ -401,8 +423,12 @@ Type objective_function<Type>::operator() ()
   rhoalphaT=exp(logit_rhoalphaT)/(1+exp(logit_rhoalphaT)); //Age correlation of trap net catchability random walk
   rhoalphaG=exp(logit_rhoalphaG)/(1+exp(logit_rhoalphaG)); //Age correlation of gill net catchability random walk
 
-  sd_logcatchG.fill(exp(log_sd_logcatchG)); //Gill net catch observation error variance
-  sd_logcatchT.fill(exp(log_sd_logcatchT)); //Trap net catch observation error variance
+  // for(j=0;j<=ages.size()-1;j++)
+  // {
+  //   sd_logcatchG(j)=(exp(log_sd_logcatchG(j))); //Gill net catch observation error variance
+  //   sd_logcatchT(j)=(exp(log_sd_logcatchT(j))); //Trap net catch observation error variance
+  // }
+
   rhoalphacatchT=exp(logit_rhoalphacatchT)/(1+exp(logit_rhoalphacatchT)); //Age correlation of trap net catch random walk
   rhoalphacatchG=exp(logit_rhoalphacatchG)/(1+exp(logit_rhoalphacatchG)); //Age correlation of gill net catch random walk
 
@@ -438,6 +464,8 @@ Type objective_function<Type>::operator() ()
 
   // std::cout<<"obs_CAT: "<<obs_CAT<<std::endl;
   // std::cout<<"obs_CAG: "<<obs_CAG<<std::endl;
+  // std::cout<<"obs_CT: "<<obs_CT<<std::endl;
+  // std::cout<<"obs_CG: "<<obs_CG<<std::endl;
 
   //IV. FUNCTIONS AND CALCULATIONS
   //---------------------------------------------------------------------------------------------
@@ -646,8 +674,8 @@ Type objective_function<Type>::operator() ()
     PAG.row(i)=CAG.row(i)/(CG(i)+0.001);
   }
 
-  //std::cout<<"CAT: "<<CAT<<std::endl;
-  //std::cout<<"CAG: "<<CAG<<std::endl;
+  // std::cout<<"CAT: "<<CAT<<std::endl;
+  // std::cout<<"CAG: "<<CAG<<std::endl;
   //std::cout<<"MDEAD: "<<MDEAD<<std::endl;
   //std::cout<<"TDEAD: "<<TDEAD<<std::endl;
   //std::cout<<"CT: "<<CT<<std::endl;
@@ -681,8 +709,11 @@ Type objective_function<Type>::operator() ()
       denomG(i,j)=pow(denomG(i,j),0.5);
     }
   }
-  residPAT=(obs_PAT.array()-PAT.array())/denomT.array();
-  residPAG=(obs_PAG.array()-PAG.array())/denomG.array();
+  // residPAT=(obs_PAT.array()-PAT.array())/denomT.array();
+  // residPAG=(obs_PAG.array()-PAG.array())/denomG.array();
+  
+  residPAT=obs_PAT.array()-PAT.array();
+  residPAG=obs_PAG.array()-PAG.array();
 
   for(i=0;i<=ryears.size()-2;i++)
   {
@@ -697,8 +728,8 @@ Type objective_function<Type>::operator() ()
   }
 
   //Catch at age
-  residCAT=log(obs_CAT.array())-log(CAT.array());
-  residCAG=log(obs_CAG.array())-log(CAG.array());
+  residCAT=log(obs_CAT.array()+1)-log(CAT.array()+1);
+  residCAG=log(obs_CAG.array()+1)-log(CAG.array()+1);
 
   //std::cout<<"prodPAT: "<<prodPAT<<std::endl;
   //std::cout<<"prodPAG: "<<prodPAG<<std::endl;
@@ -711,8 +742,8 @@ Type objective_function<Type>::operator() ()
   //std::cout<<"residPAG: "<<residPAG<<std::endl;
   //std::cout<<"resid_effG: "<<resid_effG<<std::endl;
   //std::cout<<"resid_effT: "<<resid_effT<<std::endl;
-  //std::cout<<"residCAT: "<<residCAT<<std::endl;
-  //std::cout<<"residCAG: "<<residCAT<<std::endl;
+  // std::cout<<"residCAT: "<<residCAT<<std::endl;
+  // std::cout<<"residCAG: "<<residCAT<<std::endl;
 
   //12. Projected Values
   //-----------------------------------------------
@@ -850,12 +881,42 @@ Type objective_function<Type>::operator() ()
 
   //14. Objective Functions
   //-----------------------------------------------
+  // sd_logCG = 0.0667612;
+  sd_logCG = exp(log_sig);
+  sd_logCT = exp(log_sig);
+    
   NLP= 0.0; //Components related to priors and process error
   NLL= 0.0; //Components related to fit to data and observation error
 
   //Penalty for Natural Mortality M deviating from prior
   NLP+= 0.5/pow(sdM,2.0)*pow(lnmedM-lnM,2.0)+1.0*log(sdM);
-  //std::cout<<"NLP M: "<<NLP<<std::endl;
+  // std::cout<<"NLP M: "<<NLP<<std::endl;
+  
+  // nonzeroyearsT(0)=15.0;
+  // nonzeroyearsT(1)=27.0;
+  // nonzeroyearsT(2)=29.0;
+  // nonzeroyearsT(3)=29.0;
+  // nonzeroyearsT(4)=27.0;
+  // nonzeroyearsT(5)=26.0;
+  // nonzeroyearsT(6)=25.0;
+  // nonzeroyearsT(7)=25.0;
+  // nonzeroyearsT(8)=18.0;
+  // nonzeroyearsT(9)=18.0;
+  // nonzeroyearsT(10)=13.0;
+  // nonzeroyearsT(11)=10.0;
+  // 
+  // nonzeroyearsG(0)=26.0;
+  // nonzeroyearsG(1)=31.0;
+  // nonzeroyearsG(2)=32.0;
+  // nonzeroyearsG(3)=32.0;
+  // nonzeroyearsG(4)=32.0;
+  // nonzeroyearsG(5)=32.0;
+  // nonzeroyearsG(6)=27.0;
+  // nonzeroyearsG(7)=24.0;
+  // nonzeroyearsG(8)=17.0;
+  // nonzeroyearsG(9)=13.0;
+  // nonzeroyearsG(10)=10.0;
+  // nonzeroyearsG(11)=8.0;
 
   //Normally distributed deviations from random walk for trap and gill net catchability
   //To run a multivariate normal distribution in TMB, first calculate correlation and variance covariance matrices:
@@ -913,56 +974,82 @@ Type objective_function<Type>::operator() ()
     NLP+= my_dmvnormT(effort_devsT.row(i));
     NLP+= my_dmvnormG(effort_devsG.row(i));
   }
-  //std::cout<<"NLP M, qT, and qG: "<<NLP<<std::endl;
+  // std::cout<<"my_dmvnormG(effort_devsG.row(0)): "<<my_dmvnormG(effort_devsG.row(0))<<std::endl;
+  // std::cout<<"NLP M, qT, and qG: "<<NLP<<std::endl;
 
   //Process error around random walk recruitment is normally distributed
   NLP-=sum(dnorm(log_rec_devs,0,sdSR,true));
-  //std::cout<<"NLP M, qT, qG, and R: "<<NLP<<std::endl;
-
-
-
-  sd_logcatchT_diag.fill(Type(0));
-  sd_logcatchG_diag.fill(Type(0));
-
+  // std::cout<<"NLP M, qT, qG, and R: "<<NLP<<std::endl;
+  // std::cout<<"NLL: "<<NLL<<std::endl;
+  
   for(i=0;i<=ages.size()-1;i++)
   {
     for(j=0;j<=ages.size()-1;j++)
     {
-      // Correlation matrix as a function of age difference
-      cormatcatchG(i,j)=pow(rhoalphacatchG,abs(i-j));
       cormatcatchT(i,j)=pow(rhoalphacatchT,abs(i-j));
-
-      // Correlation matrix is a common but estimated constant
-      // cormatcatchG(i,j)=rhoalphacatchG;
-      // cormatcatchT(i,j)=rhoalphacatchT;
+      cormatcatchG(i,j)=pow(rhoalphacatchG,abs(i-j));
     }
-    // cormatG(i,i)=1;
-    sd_logcatchG_diag(i,i)=sd_logcatchG(i);
-    sd_logcatchT_diag(i,i)=sd_logcatchT(i);
   }
-
-
-  // std::cout<<"cormatcatchG: "<<cormatcatchG<<std::endl;
-  // std::cout<<"cormatcatchT: "<<cormatcatchT<<std::endl;
-  // std::cout<<"sd_logcatchG_diag: "<<sd_logcatchG_diag<<std::endl;
-  // std::cout<<"sd_logcatchT_diag: "<<sd_logcatchT_diag<<std::endl;
   
-  // Calculate the variance covariance matrices based on correlation and SD diag matrices
-  // Calculate the "density object" dmvnorm for easy density calculation in next step
-  varcovcatchT=sd_logcatchT_diag*cormatcatchT*sd_logcatchT_diag;
-  varcovcatchG=sd_logcatchG_diag*cormatcatchG*sd_logcatchG_diag;
+  // Aval = 0.05;
+  // Bval = 1.05;
+  // Cval = 0.0003;
   
-  //std::cout<<"varcovcatchT: "<<varcovcatchT<<std::endl;
-  //std::cout<<"varcovcatchG: "<<varcovcatchG<<std::endl;
+  // sd_logcatchG_diag.fill(Type(0));
+  // sd_logcatchT_diag.fill(Type(0));
+  matrix<Type> tmpdiagT(ages.size(),ages.size());
+  matrix<Type> tmpdiagG(ages.size(),ages.size());
   
-  //Process error around age-correlated catchability is multivariate normal distributed
-  for(i=0;i<=ryears.size()-1;i++)
+  for (i=0; i<=ryears.size()-1; i++)
   {
-    NLL+= MVNORM(varcovcatchG)(residCAG.row(i));
-    NLL+= MVNORM(varcovcatchT)(residCAT.row(i));
-  }
-  // std::cout<<"NLL: "<<NLL<<std::endl;
+    if(N_SampG(i)==0)
+    {
+    NLL+=Type(0.5)/pow(sd_logCG,2.0)*pow(log((Type(.01)+obs_CG(i))/(Type(.01)+CG(i))),2.0) + log(sd_logCG);
+    }
+    else
+    {
+      for(j=0;j<=ages.size()-1;j++)
+      {
+        for(k=0;k<=ages.size()-1;k++)
+        {
+          tmpdiagG(j,k)=0.0;
+          tmpdiagG(k,k)=Aval+Bval*exp(-1.0*Cval*obs_CAG(i,k));
+        }
+      }
+      sd_logcatchG_diag(i)=tmpdiagG;
+      varcovcatchG(i)=sd_logcatchG_diag(i)*cormatcatchG*sd_logcatchG_diag(i);
+      
+      NLL+= MVNORM(varcovcatchG(i))(residCAG.row(i));
+      // std::cout<<"varcovcatchG(i): "<<varcovcatchG(i)<<std::endl;
+    }
 
+    
+    
+    if(N_SampT(i)==0)
+    {
+      NLL+=0.5/pow(sd_logCT,2.0)*pow(log((.01+obs_CT(i))/(.01+CT(i))),2.0) + log(sd_logCT);
+    }
+    else
+    {
+      for(j=0;j<=ages.size()-1;j++)
+      {
+        for(k=0;k<=ages.size()-1;k++)
+        {
+          tmpdiagT(j,k)=0.0;
+          tmpdiagT(k,k)=Aval+Bval*exp(-1.0*Cval*obs_CAT(i,k));
+        }
+      }
+      sd_logcatchT_diag(i)=tmpdiagT;
+      varcovcatchT(i)=sd_logcatchT_diag(i)*cormatcatchT*sd_logcatchT_diag(i);
+      
+      NLL+= MVNORM(varcovcatchT(i))(residCAT.row(i));
+      // std::cout<<"varcovcatchT(i): "<<varcovcatchT(i)<<std::endl;
+    }
+  
+  }
+  
+  // std::cout<<"NLL: "<<NLL<<std::endl;
+  
   f=NLL+NLP;
   // f=0.0;
   // std::cout<<"f: "<<f<<std::endl;

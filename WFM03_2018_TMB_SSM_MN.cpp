@@ -914,8 +914,16 @@ Type objective_function<Type>::operator() ()
   {
     for(j=0;j<=ages.size()-1;j++)
     {
+      // if(N_SampT(i)>0&&obs_PAT(i,j)>0)
+      if(N_SampT(i)>0)
+      {
       NLL-= N_SampT(i)*obs_PAT(i,j)*log(.0001+PAT(i,j));
+      }
+      // if(N_SampG(i)>0&&obs_PAG(i,j)>0)
+      if(N_SampG(i)>0)
+      {
       NLL-= N_SampG(i)*obs_PAG(i,j)*log(.0001+PAG(i,j));
+      }
       
       // 	  NLL-=NtildeT(i)*obs_PAT(i,j)*log(0.0001+PAT(i,j));
       //     NLL-=NtildeG(i)*obs_PAG(i,j)*log(0.0001+PAG(i,j));

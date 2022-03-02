@@ -883,10 +883,6 @@ Type objective_function<Type>::operator() ()
   // 
   // std::cout<<"piT: "<<piT<<std::endl;
   // // std::cout<<"Total: "<<NLL+NLP<<std::endl;
-  
-  
-  //Observation Error 2: NLL CALCULATION BASED COMBINED CATCH AND COMPOSITION
-  
 
   // f=NLL+NLP;
   f=0.0;
@@ -935,49 +931,49 @@ Type objective_function<Type>::operator() ()
   ADREPORT(resid_effG);
 
   
-  SIMULATE{
-    Type sd_logCT_sim = sd_logCT;
-    Type sd_logCG_sim = sd_logCG;
-    
-    //TRAP NET TOTAL HARVEST BY WEIGHT
-    vector<Type> CT_obs_sim = exp(rnorm(log(CT),sd_logCT_sim));
-    // vector<Type> CT_obs_sim = exp(log(obs_CT)); //"Simulate" the real data, to check if I can recover the same estimates from identical data
-    // vector<Type> CT_obs_sim = exp(log(CT)); //"Simulate" the predicted data without error
-    vector<Type> harv_wgtT_sim = CT_obs_sim.array() * mnwgtT.array() * Tharv_adjust.array();
-    
-    //GILL NET TOTAL HARVEST BY WEIGHT
-    vector<Type> CG_obs_sim = exp(rnorm(log(CG),sd_logCG_sim));
-    // vector<Type> CG_obs_sim = exp(log(obs_CG)); //"Simulate" the real data, to check if I can recover the same estimates from identical data
-    // vector<Type> CG_obs_sim = exp(log(CG)); //"Simulate" the predicted data without error
-    vector<Type> harv_wgtG_sim = CG_obs_sim.array() * mnwgtG.array() * Gharv_adjust.array();
-
-    
-    matrix<Type> obs_PAT_sim(ryears.size(),ages.size());
-    matrix<Type> obs_PAG_sim(ryears.size(),ages.size());
-    
-    //Simulate proportions at age using either effective sample size (Ntrap/Ngill)
-    //or the true number of sampled indivituals (NtildeG/NtildeT)
-    //or an adjusted amount to increase the ESS (reducing error)
-    vector <Type> Ntrap_sim;
-    vector <Type> Ngill_sim;
-    
-    for(i=0;i<=ryears.size()-1;i++)
-    {
-      obs_PAT_sim.row(i) = rmultinom(Ntrap(i),vector<Type>(PAT.row(i)))/Ntrap(i);
-      obs_PAG_sim.row(i) = rmultinom(Ngill(i),vector<Type>(PAG.row(i)))/Ngill(i);
-      
-      // obs_PAT_sim.row(i) =vector<Type>(obs_PAT.row(i)); //"Simulate" the real data, to check if I can recover the same estimates from identical data
-      // obs_PAG_sim.row(i) =vector<Type>(obs_PAG.row(i));
-      // obs_PAT_sim.row(i) =vector<Type>(PAT.row(i)); //"Simulate" the predicted data without error
-      // obs_PAG_sim.row(i) =vector<Type>(PAG.row(i));
-    }
-
-    REPORT(harv_wgtT_sim);
-    REPORT(harv_wgtG_sim);
-    REPORT(obs_PAT_sim);
-    REPORT(obs_PAG_sim);
-    
-  }
+  // SIMULATE{
+  //   Type sd_logCT_sim = sd_logCT;
+  //   Type sd_logCG_sim = sd_logCG;
+  //   
+  //   //TRAP NET TOTAL HARVEST BY WEIGHT
+  //   vector<Type> CT_obs_sim = exp(rnorm(log(CT),sd_logCT_sim));
+  //   // vector<Type> CT_obs_sim = exp(log(obs_CT)); //"Simulate" the real data, to check if I can recover the same estimates from identical data
+  //   // vector<Type> CT_obs_sim = exp(log(CT)); //"Simulate" the predicted data without error
+  //   vector<Type> harv_wgtT_sim = CT_obs_sim.array() * mnwgtT.array() * Tharv_adjust.array();
+  //   
+  //   //GILL NET TOTAL HARVEST BY WEIGHT
+  //   vector<Type> CG_obs_sim = exp(rnorm(log(CG),sd_logCG_sim));
+  //   // vector<Type> CG_obs_sim = exp(log(obs_CG)); //"Simulate" the real data, to check if I can recover the same estimates from identical data
+  //   // vector<Type> CG_obs_sim = exp(log(CG)); //"Simulate" the predicted data without error
+  //   vector<Type> harv_wgtG_sim = CG_obs_sim.array() * mnwgtG.array() * Gharv_adjust.array();
+  // 
+  //   
+  //   matrix<Type> obs_PAT_sim(ryears.size(),ages.size());
+  //   matrix<Type> obs_PAG_sim(ryears.size(),ages.size());
+  //   
+  //   //Simulate proportions at age using either effective sample size (Ntrap/Ngill)
+  //   //or the true number of sampled indivituals (NtildeG/NtildeT)
+  //   //or an adjusted amount to increase the ESS (reducing error)
+  //   vector <Type> Ntrap_sim;
+  //   vector <Type> Ngill_sim;
+  //   
+  //   for(i=0;i<=ryears.size()-1;i++)
+  //   {
+  //     obs_PAT_sim.row(i) = rmultinom(Ntrap(i),vector<Type>(PAT.row(i)))/Ntrap(i);
+  //     obs_PAG_sim.row(i) = rmultinom(Ngill(i),vector<Type>(PAG.row(i)))/Ngill(i);
+  //     
+  //     // obs_PAT_sim.row(i) =vector<Type>(obs_PAT.row(i)); //"Simulate" the real data, to check if I can recover the same estimates from identical data
+  //     // obs_PAG_sim.row(i) =vector<Type>(obs_PAG.row(i));
+  //     // obs_PAT_sim.row(i) =vector<Type>(PAT.row(i)); //"Simulate" the predicted data without error
+  //     // obs_PAG_sim.row(i) =vector<Type>(PAG.row(i));
+  //   }
+  // 
+  //   REPORT(harv_wgtT_sim);
+  //   REPORT(harv_wgtG_sim);
+  //   REPORT(obs_PAT_sim);
+  //   REPORT(obs_PAG_sim);
+  //   
+  // }
   
   return f;
 

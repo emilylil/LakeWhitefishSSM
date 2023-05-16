@@ -6,7 +6,7 @@
 
 # DATA SECTION
 ############################################################################
-setdata <- function(retroyear=2017,ESS_W_T=1,ESS_W_G=1)
+setdata <- function(retroyear=2017)
 {
   fyear <- 1986
   ldyear <- 2017
@@ -23,11 +23,11 @@ setdata <- function(retroyear=2017,ESS_W_T=1,ESS_W_G=1)
   ryears <- c(fyear:lyear)
   ages <- c(fage:lage)
   
-  rhoSR <- 15
+  rhoSR <- 15.0
   rhoCG <- 1.5
   rhoCT <- 1.5
-  rhoEG <- 4
-  rhoET <- 4
+  rhoEG <- 4.0
+  rhoET <- 4.0
   rhosel <- 1.0
   
   sp_time <- 0.838
@@ -137,7 +137,6 @@ setdata <- function(retroyear=2017,ESS_W_T=1,ESS_W_G=1)
   H2O_T <- 6.0
   Linf <- 51.9
   vb_K <- 0.44
-  lnmedM <- -1.60944
   sdM <- 0.1
   surv_num <- 0
   
@@ -176,7 +175,8 @@ setdata <- function(retroyear=2017,ESS_W_T=1,ESS_W_G=1)
                        nrow=(lyear-fyear+1),ncol=(lage-fage+1),byrow=T)
   in_NtildeT <- c(344,242,203,480,344,434,391,457,644,347,834,902,915,618,519,919,
                   1261,355,680,509,672,86,231,328,121,229,351,527,558,450,217,350)
-  in_N_SampT <- round(in_NtildeT*ESS_W_T)
+  in_N_SampT <- c(40,28,24,56,40,51,46,53,75,40,97,105,107,72,60,107,147,
+                  41,79,59,78,10,27,38,14,27,41,61,65,52,25,41)
   
   in_harv_wgtT <- c(118065,174693,201989,189454,213174,206636,274034,294428,
                     210446,207172,277517,312879,316565,166873,279848,307084,
@@ -232,7 +232,8 @@ setdata <- function(retroyear=2017,ESS_W_T=1,ESS_W_G=1)
   in_NtildeG <- c(0,79,69,0,0,171,199,507,239,196,364,628,
                   698,530,307,249,386,254,168,569,367,306,
                   182,239,169,303,716,494,201,417,226,296)
-  in_N_SampG <- round(in_NtildeG*ESS_W_G)
+  in_N_SampG <- c(0,5,4,0,0,10,12,30,14,11,21,37,41,31,18,
+                  15,23,15,10,33,21,18,11,14,10,18,42,29,12,24,13,17)
   
   in_harv_wgtG <- c(132548,212341,284612,289297,218073,318960,
                     583241,501073,279138,309276,232433,185046,
@@ -253,6 +254,9 @@ setdata <- function(retroyear=2017,ESS_W_T=1,ESS_W_G=1)
                   0.575,0.311,0.510,0.366,1.090,1.851,
                   3.375,4.000,5.977,4.926,5.388,3.429,
                   3.197,4.576)
+  
+  maxNG <- 50
+  W_ageG <- c(0.838,0.902,0.994,1.053,1.098,1.119,1.119,1.220,1.182,1.266,1.299,1.188)
   
   in_effort_adjust <- c(1.008,1.008,1.008,1.000,1.000,1.000,
                         1.000,1.000,1.000,1.024,1.049,1.049,
@@ -295,13 +299,13 @@ setdata <- function(retroyear=2017,ESS_W_T=1,ESS_W_G=1)
                     in_latage=as.matrix(in_latage),
                     in_mat=as.matrix(in_mat),
                     H2O_T=H2O_T,Linf=Linf,vb_K=vb_K,
-                    lnmedM=lnmedM,sdM=sdM,
-                    surv_num=surv_num,
+                    sdM=sdM,surv_num=surv_num,
                     in_obs_PAT=as.matrix(in_obs_PAT),in_NtildeT=in_NtildeT,in_N_SampT=in_N_SampT,
                     in_harv_wgtT=in_harv_wgtT,in_mnwgtT=in_mnwgtT,in_effortT=in_effortT,
                     maxNT=maxNT,W_ageT=W_ageT,
                     in_obs_PAG=as.matrix(in_obs_PAG),in_NtildeG=in_NtildeG,in_N_SampG=in_N_SampG,
                     in_harv_wgtG=in_harv_wgtG,in_mnwgtG=in_mnwgtG,in_effortG=in_effortG,
+                    maxNG=maxNG,W_ageG=W_ageG,
                     in_effort_adjust=in_effort_adjust,
                     in_Tharv_adjust=in_Tharv_adjust,in_Gharv_adjust=in_Gharv_adjust,
                     percent_female=percent_female,eggs_per_kg=eggs_per_kg,
@@ -370,7 +374,7 @@ setparam_at_est <- function(data,log_sig = -3.11209870007)
 #############################################################################
 
 #############################################################################
-setparam_at_init <- function(data,log_sig = -3.11209870007)
+setparam_at_init <- function(data,log_sig = -3)
 {
   #Starting parameters are identical to where ADMB started
   log_sig <- -3
@@ -385,7 +389,7 @@ setparam_at_init <- function(data,log_sig = -3.11209870007)
   logselT_p2 <- -2.5
   logdevT_p1 <- rep(0,31)
   
-  log_R0 <- 13
+  log_R0 <- 12
   log_recdev <- rep(0,36)
   lnalpha <- -9
   lnbeta <- -22

@@ -6,26 +6,6 @@ void PrintFor(const char* before, const double& var) { }
 }
 
 template<class Type>
-vector<Type> rmultinom(Type N, vector<Type> p)
-{
-  //multinomial
-  int dim = p.size();
-  vector<Type> x(dim);
-  int Nint = CppAD::Integer(N);
-  x.setZero();
-  for(int i = 0; i < Nint; i++)
-  {
-    Type y = runif(0.0,1.0);
-    for(int a = 0; a < dim; a++) if(y < p.head(a+1).sum())
-    {
-      x(a) += 1.0;
-      break;
-    }
-  }
-  return x;
-}
-
-template<class Type>
 Type objective_function<Type>::operator() ()
 {
   
@@ -64,7 +44,7 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(targ_age); //Target age for target mortality estimation
   DATA_INTEGER(totlmort); //Total number of mortality sources
   DATA_INTEGER(fishmort); //Number of fishing mortality sources
-
+  
   DATA_VECTOR(years); //Vector of years
   DATA_VECTOR(ryears); //Vector of years in retrospective analysis
   DATA_VECTOR(ages); //Vector of ages
@@ -75,21 +55,17 @@ Type objective_function<Type>::operator() ()
   DATA_SCALAR(rhoEG);
   DATA_SCALAR(rhoET);
   DATA_SCALAR(rhosel);
-  
   DATA_SCALAR(sp_time); //Spawning time (fraction showing percent of the year passes before spawn)
   DATA_SCALAR(harv_time);
-  
   DATA_MATRIX(in_watage); //Weight at age
   DATA_MATRIX(in_latage); //Length at age
   DATA_MATRIX(in_mat); //Maturity schedule at age and year
-  
   DATA_SCALAR(H2O_T); //Values related to the environmental specific natural mortality
   DATA_SCALAR(Linf);
   DATA_SCALAR(vb_K);
   DATA_SCALAR(lnmedM);
   DATA_SCALAR(sdM); //Prior standard deviation of natural mortality
   DATA_INTEGER(surv_num);
-  
   //Trap net data starts here
   DATA_MATRIX(in_obs_PAT); //Observed proportion at age
   DATA_VECTOR(in_NtildeT); //Number of fish sampled in trap net bio samps
@@ -99,7 +75,6 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(in_effortT); //Observed effort by year
   DATA_SCALAR(maxNT);
   DATA_VECTOR(W_ageT);
-  
   //Gill net data starts here
   DATA_MATRIX(in_obs_PAG); //Observed proportion at age
   DATA_VECTOR(in_NtildeG); //Number of fish sampled in trap net bio samps
@@ -107,20 +82,18 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(in_harv_wgtG); //Gill net harvest biomass
   DATA_VECTOR(in_mnwgtG); //Mean weight of individual in catch
   DATA_VECTOR(in_effortG); //Observed effort by year
+  DATA_SCALAR(maxNG);
+  DATA_VECTOR(W_ageG);
   DATA_VECTOR(in_effort_adjust); //Adjustment in effort for changes over time
-  
   //Harvest adjustment vector for under reporting
   DATA_VECTOR(in_Tharv_adjust);
   DATA_VECTOR(in_Gharv_adjust);
-  
   //Constants used to calculate egg production
   DATA_SCALAR(percent_female);
   DATA_SCALAR(eggs_per_kg);
-  
   //Ref ages for selectivity
   DATA_SCALAR(reflenG);
   DATA_SCALAR(reflenT);
-  
   //Target rates
   DATA_SCALAR(targ_ptn);
   DATA_SCALAR(targ_A);
@@ -182,23 +155,17 @@ Type objective_function<Type>::operator() ()
   //---------------------------------------------------------------------------------------------
   PARAMETER(log_sig); //Sigma value, used to convert rhos to SD just for obs error
   PARAMETER(lnM); //Log scale natural mortality
-  
   PARAMETER(log_qT); //Catchability, trap net
   PARAMETER(log_qG); //Catchability, gill net
-  
   PARAMETER(logselG_p1); //Double logistic selectivity curves
   PARAMETER(logselG_p2);
   PARAMETER(logselT_p1);
   PARAMETER(logselT_p2);
-  
   PARAMETER_VECTOR(logdevT_p1); 
   PARAMETER(log_R0);
   PARAMETER_VECTOR(log_recdev);
-  // PARAMETER_VECTOR(log_rec);
-  
   PARAMETER(lnalpha);
   PARAMETER(lnbeta);
-  
   PARAMETER_VECTOR(effort_devsT); 
   PARAMETER_VECTOR(effort_devsG); 
   
@@ -410,12 +377,11 @@ Type objective_function<Type>::operator() ()
     Gharv_adjust(i) = in_Gharv_adjust(i);
   }
 
+  
   //Add adjustments to the observed effort and catch
   effortG = effort_adjust.array()*effortG.array();
   obs_CT = (harv_wgtT/mnwgtT)/Tharv_adjust;
   obs_CG = (harv_wgtG/mnwgtG)/Gharv_adjust;
-  
-  lnM=lnmedM;
 
   //IV. FUNCTIONS AND CALCULATIONS
   //---------------------------------------------------------------------------------------------
@@ -566,7 +532,7 @@ Type objective_function<Type>::operator() ()
   MD=Z-F;
 
   // Estimate an average Z in the first 3 years to be used to estimate recruitment in years before start of data set
-  AvgZFirstYears=(Z.row(0).array()+Z.row(1).array()+Z.row(2).array())/3;
+  // AvgZFirstYears=(Z.row(0).array()+Z.row(1).array()+Z.row(2).array())/3;
 
   // std::cout<<"qT: "<<qT<<std::endl;
   // std::cout<<"qG: "<<qG<<std::endl;
@@ -584,7 +550,7 @@ Type objective_function<Type>::operator() ()
 
   //5. Numbers at age
   //-----------------------------------------------
-
+  
   N(0,0)=exp(log_R0);
   for(i=1;i<=ryears.size()-1;i++)
   {
@@ -901,16 +867,12 @@ Type objective_function<Type>::operator() ()
   NLP= 0.0; //Components related to priors and process error
   NLL= 0.0; //Components related to fit to data and observation error
 
-  //Constraining the deviations around the estimated recruitment
-  // NLP+=1000*log_relpop.sum();
-  // std::cout<<"NLP: "<<NLP<<std::endl;
-
   //Penalty for average fishing mortality deviating from 0.2
   // NLP+=1000*pow(log((avg_F+0.000001)/0.2),2.0);
   // std::cout<<"NLP: "<<NLP<<std::endl;
 
   //Penalty for Natural Mortality M deviating from prior
-  NLP+= 0.5/pow(sdM,2.0)*pow(lnmedM-lnM,2.0)+1.0*log(sdM);
+  NLP+= 0.5/pow(sdM,2.0)*pow((lnmedM-lnM),2.0)+1.0*log(sdM);
   // std::cout<<"NLP M: "<<NLP<<std::endl;
 
   //Process errors around the trap net catchability random walk
@@ -1000,12 +962,26 @@ Type objective_function<Type>::operator() ()
   REPORT(FT);
   REPORT(M);
   REPORT(Z);
-  
   REPORT(CT);
   REPORT(CG);
-  
   REPORT(selG);
   REPORT(selT);
+  REPORT(NLL);
+  REPORT(log_sig);
+  REPORT(lnM);
+  REPORT(log_qT);
+  REPORT(log_qG);
+  REPORT(logselG_p1);
+  REPORT(logselG_p2);
+  REPORT(logselT_p1);
+  REPORT(logselT_p2);
+  REPORT(logdevT_p1);
+  REPORT(log_R0);
+  REPORT(log_recdev);
+  REPORT(lnalpha);
+  REPORT(lnbeta);
+  REPORT(effort_devsT);
+  REPORT(effort_devsG);
   
   // AD Reports:
   ADREPORT(N);
@@ -1014,7 +990,6 @@ Type objective_function<Type>::operator() ()
   ADREPORT(FG);
   ADREPORT(FT);
   ADREPORT(M);
-
   ADREPORT(CT);
   ADREPORT(CG);
   ADREPORT(PAT);

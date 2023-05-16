@@ -13,7 +13,12 @@
 
 # Set up workspace, load libraries, compile and link model
 ############################################################################
+# TMB:::install.contrib("https://github.com/vtrijoulet/OSA_multivariate_dists/archive/main.zip")
+# devtools::install_github("fishfollower/compResidual/compResidual")
+# TMB:::install.contrib("https://github.com/vtrijoulet/OSA_multivariate_dists/archive/main.zip")
+# devtools::install_github("fishfollower/compResidual/compResidual", INSTALL_opts=c("--no-multiarch"),force=T)
 library(TMB)
+library(compResidual)
 library(ggplot2)
 library(tidyverse)
 library(cowplot)
@@ -37,7 +42,7 @@ source("WFM03_2018_TMB_SSM_Functions.R")
 # MODEL DETAILS SPECIFICATION SECTION:
 #############################################################################
 # How to fit the age-composition data (1- log normal and multinomial (MN), 2-multivariate lognormal (MVLN), 3-dirichlet multinomial (DMN))?
-agecompfit <- 2
+agecompfit <- 1
 # Do you want the end results to be compared against the non-SSM ADMB model, Yes (T) or No (F)?
 checkagainstADMB <- T
 
@@ -55,13 +60,13 @@ ESS_w[2] <- 0.0585
 # Do you want to run simulations to check the model? 
 dosimulation <- F
 # If you do want to run simulations, how many total?
-numsims <- 50
+numsims <- 5
 
 # Do you want to run retrospective analysis, Yes (T) or No (F)?
 isretro <- F
 # If you do want to run a retrospective analysis, which years do you want to start and end on?
 retrostart <- 2017
-retroend <- 2007
+retroend <- 2012
 ############################################################################
 
 
@@ -82,12 +87,14 @@ if(agecompfit==4){
   modelname = "WFM03_2018_TMB_SSM_cLGCP.cpp"
 }
 
+modelname = "WFM03_2018_TMB_SSM_MN_OSA.cpp"
 # Set up TMB specific elements from CPP: compile and load code
 compile(modelname)
 modelname=substr(modelname,1,nchar(modelname)-4)
 dyn.load(dynlib(modelname))
 
-
+# compile("compResidual.cpp")
+# dyn.load("CompResidual")
 #############################################################################
 # CODE SECTION:
 #############################################################################
@@ -106,8 +113,12 @@ rm(data,parameters,bounds,obj,fit,sdr)
 #Specify the data and put it in a single list
 data<-setdata(ESS_W_T=ESS_w[1],ESS_W_G=ESS_w[2],agecompfit=agecompfit) 
 #Specify the parameters and put it in a single list
-parameters<-setparam(data,agecompfit,logit_rhoalphaT=2.197225,logit_rhoalphaG=2.197225)
-# parameters<-setparam(data,agecompfit,log_sig = log(0.32)) 
+# parameters<-setparam(data,agecompfit,logit_rhoalphaT=2.197225,logit_rhoalphaG=2.197225)
+# log_siglow <- log(0.0667605*0.5)
+# log_sighigh <- log(0.0667605*1.5)
+
+parameters<-setparam(data,agecompfit,log_sig = -2.70663320551)
+# parameters<-setparam(data,agecompfit,log_sig = log_sighigh)
 #Specify the upper and lower bounds and put it in a single list
 bounds<-setbounds(agecompfit)
 
@@ -115,20 +126,71 @@ bounds<-setbounds(agecompfit)
 obj <- setmodel(data,parameters,agecompfit,modelname)
 #Make the model fit using the specified model object and bounds
 fit <- fitmodel(obj,bounds)
+# fit <- fitmodel(obj,bounds,mymapinput=list())
 #Report the model into a sdreport file using the model object
 sdr <- reportmodel(obj)
 sdr <- sdreport(obj)
 # summary(sdr)
+
+# OSA Residuals Calculation:
+# dataOSA <-setdataOSA(ESS_W_T=ESS_w[1],ESS_W_G=ESS_w[2],agecompfit=agecompfit)
+# parameters<-setparam(dataOSA,agecompfit,log_sig = -2.70663320551)
+# bounds<-setbounds(agecompfit)
+# objOSA <- setmodel(dataOSA,parameters,agecompfit,modelname)
+# fit <- fitmodel(objOSA,bounds)
+# # sdr <- sdreport(objOSA)
+#   
+# osacompTGeneric <- suppressWarnings(oneStepPredict(objOSA, observation.name = "in_obs_PAT", data.term.indicator="keepPAT", method="oneStepGeneric",discrete=F))
+# write.table(osacompTGeneric$residual,file=paste0("osacompTGenericFullFix",".txt"))
+# 
+# osacompGGeneric <- suppressWarnings(oneStepPredict(objOSA, observation.name = "in_obs_PAG", data.term.indicator="keepPAG", method="oneStepGeneric",discrete=F))
+# write.table(osacompGGeneric$residual,file=paste0("osacompGGenericFullFix",".txt"))
+# 
+# jittervalues <- seq(1.005,1.1,by=0.005)
+# for(i in 1:length(jittervalues))
+# {
+#   dataOSA <-setdataOSA(ESS_W_T=ESS_w[1],ESS_W_G=ESS_w[2],agecompfit=agecompfit,jitter=jittervalues[i])
+#   parameters<-setparam(dataOSA,agecompfit,log_sig = -2.70663320551)
+#   bounds<-setbounds(agecompfit)
+#   objOSA <- setmodel(dataOSA,parameters,agecompfit,modelname)
+#   fit <- fitmodel(objOSA,bounds)
+#   # sdr <- sdreport(objOSA)
+#   
+#   osacompTGeneric <- suppressWarnings(oneStepPredict(objOSA, observation.name = "in_obs_PAT", data.term.indicator="keepPAT", method="oneStepGeneric",discrete=F,subset=c(1:13)))
+#   write.table(osacompTGeneric$residual,file=paste0("osacompTGenericMicroFix",jittervalues[i]*100,".txt"))
+#   
+# }
+# 
+# jittervalues<- seq(1.005,1.1,by=0.005)
+# for(i in 1:length(jittervalues))
+# {
+#   dataOSA <-setdataOSA(ESS_W_T=ESS_w[1],ESS_W_G=ESS_w[2],agecompfit=agecompfit,jitter=jittervalues[i])
+#   parameters<-setparam(dataOSA,agecompfit,log_sig = -2.70663320551)
+#   bounds<-setbounds(agecompfit)
+#   objOSA <- setmodel(dataOSA,parameters,agecompfit,modelname)
+#   fit <- fitmodel(objOSA,bounds)
+#   # sdr <- sdreport(objOSA)
+#   
+#   osacompGGeneric <- suppressWarnings(oneStepPredict(objOSA, observation.name = "in_obs_PAG", data.term.indicator="keepPAG", method="oneStepGeneric",discrete=F,reverse=T,subset=c(41:51)))
+#   write.table(osacompGGeneric$residual,file=paste0("osacompGGenericMicroSubsetFix",jittervalues[i]*100,".txt"))
+# }
+# 
+# # osacompGGeneric <- suppressWarnings(oneStepPredict(objOSA, observation.name = "in_obs_PAG", data.term.indicator="keepPAG", method="oneStepGeneric",discrete=F))
+# # write.table(osacompGGeneric$residual,file="osacompGGenericFull.txt")
+# 
+# # osaharvTGeneric <- suppressWarnings(oneStepPredict(objOSA, observation.name = "in_harvT", data.term.indicator="keepHarvT", method="oneStepGeneric",discrete=F,reverse=T))
+# # osaharvGGeneric <- suppressWarnings(oneStepPredict(objOSA, observation.name = "in_harvG", data.term.indicator="keepHarvG", method="oneStepGeneric",discrete=F,reverse=T))
+
 
 #Make a new directory to save this version of the model run
 newwd <- setnewwd(originalwd,isretro,data=data)
 #Save results (txt files)
 saveresults(originalwd,newwd,sdr)
 #Save plots depending on if intended for presentation or publication 
-savegraphspresentation(checkagainstADMB,originalwd,newwd,sdr,data)
-# savegraphspublication(checkagainstADMB,originalwd,newwd,sdr,data)
+# savegraphspresentation(checkagainstADMB,originalwd,newwd,sdr,data)
+savegraphspublication(checkagainstADMB,originalwd,newwd,sdr,data)
 #Save residual plots
-saveresiduals(originalwd,newwd,sdr,data)
+# saveresiduals(originalwd,newwd,sdr,dataOSA)
 #Just in case one of the functions didn't do it, return the working directory to where the code is
 setwd(originalwd)
 ############################################################################
@@ -219,7 +281,8 @@ if(dosimulation==T)
 ############################################################################
 rm(data,parameters,bounds,obj,fit,sdr)
 #Specify the data and put it in a single list
-data<-setsimdata(ESS_W_T=0.15,ESS_W_G=0.15,agecompfit=agecompfit) 
+simparams<-unname(fit$par)
+data<-setsimdata(2017,ESS_w[1],ESS_w[2],agecompfit)
 #Specify the parameters and put it in a single list
 parameters<-setparam(data,agecompfit,logit_rhoalphaT=2.197225,logit_rhoalphaG=2.197225)
 # parameters<-setparam(data,agecompfit,log_sig = log(0.32)) 
@@ -230,6 +293,7 @@ bounds<-setbounds(agecompfit)
 obj <- setmodel(data,parameters,agecompfit,modelname)
 #Make the model fit using the specified model object and bounds
 fit <- fitmodel(obj,bounds)
+fit<- nlminb(obj$par, obj$fn, obj$gr,lower=bounds$lower_bounds,upper=bounds$upper_bounds)
 #Report the model into a sdreport file using the model object
 sdr <- reportmodel(obj)
 sdr <- sdreport(obj)
@@ -263,7 +327,7 @@ if(isretro==T)
     #Specify the parameters and put it in a single list
     parameters<-setparam(data,agecompfit) 
     #Specify the upper and lower bounds and put it in a single list
-    bounds<-setbounds()
+    bounds<-setbounds(agecompfit)
     
     #Make the model object using the specified data and parameters
     obj <- setmodel(data,parameters,agecompfit,modelname)
@@ -276,8 +340,8 @@ if(isretro==T)
     newwd <- setnewwd(originalwd,isretro,retroyr=retroyr,retroend,retrostart,data,retrowd)
     
     saveresults(originalwd,newwd,sdr)
-    savegraphs(checkagainstADMB,originalwd,newwd,sdr,data)
-    saveresiduals(originalwd,newwd,sdr,data)
+    # savegraphspresentation(checkagainstADMB,originalwd,newwd,sdr,data)
+    # saveresiduals(originalwd,newwd,sdr,data)
     
     setwd(originalwd)
   }

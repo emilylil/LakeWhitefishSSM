@@ -1019,6 +1019,8 @@ Type objective_function<Type>::operator() ()
       sd_logcatchG_diag(i)=tmpdiagG;
       varcovcatchG(i)=sd_logcatchG_diag(i)*cormatcatchG*sd_logcatchG_diag(i);
       
+      std::cout<<"varcovcatchG(i): "<<varcovcatchG(i)<<std::endl;
+      
       NLL+= MVNORM(varcovcatchG(i))(residCAG.row(i));
       // std::cout<<"varcovcatchG(i): "<<varcovcatchG(i)<<std::endl;
     }
@@ -1043,7 +1045,7 @@ Type objective_function<Type>::operator() ()
       varcovcatchT(i)=sd_logcatchT_diag(i)*cormatcatchT*sd_logcatchT_diag(i);
       
       NLL+= MVNORM(varcovcatchT(i))(residCAT.row(i));
-      // std::cout<<"varcovcatchT(i): "<<varcovcatchT(i)<<std::endl;
+      std::cout<<"varcovcatchT(i): "<<varcovcatchT(i)<<std::endl;
     }
   
   }

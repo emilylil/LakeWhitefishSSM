@@ -5,25 +5,25 @@ namespace CppAD
 void PrintFor(const char* before, const double& var) { }
 }
 
-template<class Type>
-vector<Type> rmultinom(Type N, vector<Type> p)
-{
-  //multinomial
-  int dim = p.size();
-  vector<Type> x(dim);
-  int Nint = CppAD::Integer(N);
-  x.setZero();
-  for(int i = 0; i < Nint; i++)
-  {
-    Type y = runif(0.0,1.0);
-    for(int a = 0; a < dim; a++) if(y < p.head(a+1).sum())
-    {
-      x(a) += 1.0;
-      break;
-    }
-  }
-  return x;
-}
+// template<class Type>
+// vector<Type> rmultinom(Type N, vector<Type> p)
+// {
+//   //multinomial
+//   int dim = p.size();
+//   vector<Type> x(dim);
+//   int Nint = CppAD::Integer(N);
+//   x.setZero();
+//   for(int i = 0; i < Nint; i++)
+//   {
+//     Type y = runif(0.0,1.0);
+//     for(int a = 0; a < dim; a++) if(y < p.head(a+1).sum())
+//     {
+//       x(a) += 1.0;
+//       break;
+//     }
+//   }
+//   return x;
+// }
 
 template<class Type>
 Type objective_function<Type>::operator() ()
@@ -78,6 +78,7 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(in_NtildeT); //Number of fish sampled in trap net bio samps
   DATA_VECTOR(in_N_SampT); //Effective sample size
   DATA_VECTOR(in_harv_wgtT); //Trap net harvest biomass
+  DATA_VECTOR(in_harvT); //Trap net harvest numbers
   DATA_VECTOR(in_mnwgtT); //Mean weight of individual in catch
   DATA_VECTOR(in_effortT); //Observed effort by year
   
@@ -86,6 +87,7 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(in_NtildeG); //Number of fish sampled in trap net bio samps
   DATA_VECTOR(in_N_SampG); //Effective sample size
   DATA_VECTOR(in_harv_wgtG); //Gill net harvest biomass
+  DATA_VECTOR(in_harvG); //Trap net harvest numbers
   DATA_VECTOR(in_mnwgtG); //Mean weight of individual in catch
   DATA_VECTOR(in_effortG); //Observed effort by year
   DATA_VECTOR(in_effort_adjust); //Adjustment in effort for changes over time
@@ -158,6 +160,7 @@ Type objective_function<Type>::operator() ()
   vector<Type> NtildeT(ryears.size()); //Number of fish sampled in trap net bio samps
   vector<Type> N_SampT(ryears.size()); //Effective sample size trap net
   vector<Type> harv_wgtT(ryears.size()); //Trap net harvest biomass
+  vector<Type> harvT(ryears.size()); //Trap net harvest numbers
   vector<Type> mnwgtT(ryears.size()); //Mean weight of individual in catch
   vector<Type> effortT(ryears.size()); //Observed effort by year
   
@@ -167,6 +170,7 @@ Type objective_function<Type>::operator() ()
   vector<Type> NtildeG(ryears.size()); //Number of fish sampled in gill net bio samps
   vector<Type> N_SampG(ryears.size()); //Effective sample size gill net
   vector<Type> harv_wgtG(ryears.size()); //Gill net harvest biomass
+  vector<Type> harvG(ryears.size()); //Gill net harvest numbers
   vector<Type> mnwgtG(ryears.size()); //Gill net mean weight
   vector<Type> effortG(ryears.size()); //Observed effort by year
   vector<Type> effort_adjust(ryears.size()); //Adjustment in effort for changes over time
@@ -361,6 +365,7 @@ Type objective_function<Type>::operator() ()
     NtildeT(i) = in_NtildeT(i);
     N_SampT(i) = in_N_SampT(i);
     harv_wgtT(i) = in_harv_wgtT(i);
+    harvT(i) = in_harvT(i);
     mnwgtT(i) = in_mnwgtT(i);
     effortT(i) = in_effortT(i);
     
@@ -368,6 +373,7 @@ Type objective_function<Type>::operator() ()
     NtildeG(i) = in_NtildeG(i);
     N_SampG(i) = in_N_SampG(i);
     harv_wgtG(i) = in_harv_wgtG(i);
+    harvG(i) = in_harvG(i);
     mnwgtG(i) = in_mnwgtG(i);
     effortG(i) = in_effortG(i);
     effort_adjust(i) = in_effort_adjust(i);
@@ -407,10 +413,10 @@ Type objective_function<Type>::operator() ()
   
   //Add adjustments to the observed effort and catch
   effortG = effort_adjust.array()*effortG.array();
-  obs_CT = (harv_wgtT/mnwgtT)/Tharv_adjust;
-  obs_CG = (harv_wgtG/mnwgtG)/Gharv_adjust;
-  
-  
+  // obs_CT = (harv_wgtT/mnwgtT)/Tharv_adjust;
+  // obs_CG = (harv_wgtG/mnwgtG)/Gharv_adjust;
+  obs_CT = harvT;
+  obs_CG = harvG;
   
   
   
@@ -891,7 +897,7 @@ Type objective_function<Type>::operator() ()
   //std::cout<<"NLP M, qT, and qG: "<<NLP<<std::endl;
   
   //Process error around random walk recruitment is normally distributed
-  NLP-=sum(dnorm(log_rec_devs,0,sdSR,true));
+  NLP-=sum(dnorm(log_rec_devs,0.0,sdSR,true));
   //std::cout<<"NLP M, qT, qG, and R: "<<NLP<<std::endl;
   
   
@@ -959,6 +965,8 @@ Type objective_function<Type>::operator() ()
   
   ADREPORT(CT);
   ADREPORT(CG);
+  ADREPORT(obs_CT);
+  ADREPORT(obs_CG);
   ADREPORT(PAT);
   ADREPORT(PAG);
   ADREPORT(obs_PAT);
